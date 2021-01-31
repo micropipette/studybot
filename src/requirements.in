@@ -7,4 +7,5 @@ bs4
 requests
 flask
 pytz
-PyDictionary
+PyNaCl
+youtube-dl

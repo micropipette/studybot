@@ -20,7 +20,7 @@ class Testing(commands.Cog):
         '''
         await ctx.send(f"**Uptime**: {round(get_uptime(), 1)}s\n"
                        f"**Version**: {version}\n"
-                       f"Currently Connected to **{len(self.bot.guilds)}** "
+                       f"Currently Connected to **{len(self.bot.guilds)}** server(s)\n"
                        f"**API Latency**: {round(self.bot.latency, 4)}s\n"
                        f"Running discord.py version {discord.__version__}")
 

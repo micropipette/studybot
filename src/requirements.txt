@@ -4,7 +4,7 @@
 #
 #    pip-compile requirements.in
 #
-aiohttp==3.6.3
+aiohttp==3.7.3
     # via discord.py
 async-timeout==3.0.1
     # via aiohttp
@@ -13,31 +13,25 @@ attrs==20.3.0
 beautifulsoup4==4.9.3
     # via bs4
 bs4==0.0.1
-    # via
-    #   -r requirements.in
-    #   pydictionary
-certifi==2020.11.8
+    # via -r requirements.in
+certifi==2020.12.5
     # via requests
+cffi==1.14.4
+    # via pynacl
 chardet==3.0.4
     # via
     #   aiohttp
     #   requests
 click==7.1.2
-    # via
-    #   flask
-    #   pydictionary
+    # via flask
 discord-pretty-help==1.2.0
     # via -r requirements.in
-discord.py==1.5.1
+discord.py==1.6.0
     # via -r requirements.in
-dnspython==2.0.0
+dnspython==2.1.0
     # via -r requirements.in
 flask==1.1.2
     # via -r requirements.in
-futures==3.1.1
-    # via goslate
-goslate==1.5.1
-    # via pydictionary
 idna==2.10
     # via
     #   requests
@@ -48,27 +42,33 @@ jinja2==2.11.2
     # via flask
 markupsafe==1.1.1
     # via jinja2
-multidict==4.7.6
+multidict==5.1.0
     # via
     #   aiohttp
     #   yarl
-pydictionary==2.0.1
+pycparser==2.20
+    # via cffi
+pymongo==3.11.2
     # via -r requirements.in
-pymongo==3.11.1
+pynacl==1.4.0
     # via -r requirements.in
 python-dotenv==0.15.0
     # via -r requirements.in
-pytz==2020.4
+pytz==2020.5
     # via -r requirements.in
-requests==2.25.0
-    # via
-    #   -r requirements.in
-    #   pydictionary
-soupsieve==2.0.1
+requests==2.25.1
+    # via -r requirements.in
+six==1.15.0
+    # via pynacl
+soupsieve==2.1
     # via beautifulsoup4
-urllib3==1.26.2
+typing-extensions==3.7.4.3
+    # via aiohttp
+urllib3==1.26.3
     # via requests
 werkzeug==1.0.1
     # via flask
-yarl==1.5.1
+yarl==1.6.3
     # via aiohttp
+youtube-dl==2021.1.24.1
+    # via -r requirements.in
