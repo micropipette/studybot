@@ -33,3 +33,10 @@ async def on_error(event, *args, **kwargs):
         raise event
     except Exception:
         logger.exception(event)
+
+
+@client.event
+async def on_command_error(ctx: commands.Context, exception):
+    # When a command fails to execute
+    await ctx.send(f"Error: {exception}", reference=ctx.message)
+    logger.exception("Command Error", exc_info=exception)

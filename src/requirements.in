@@ -9,3 +9,4 @@ flask
 pytz
 PyNaCl
 youtube-dl
+gspread
