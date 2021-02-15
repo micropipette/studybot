@@ -1,11 +1,12 @@
 import discord
+from discord.embeds import Embed
 from discord.ext import commands
 
 import gspread
 import os
 import asyncio
 
-REACTIONS = "123456789abcdefghijklmnopqrstuvwxyz"
+REACTIONS = "abcdefghijklmnopqrstuvwxyz"
 
 
 def textToEmoji(s) -> str:
@@ -13,45 +14,33 @@ def textToEmoji(s) -> str:
     Converts text to equivalent emoji
     '''
     lookupTable = {
-        "a": u"\U0001F1E6",
-        "b": u"\U0001F1E7",
-        "c": u"\U0001F1E8",
-        "d": u"\U0001F1E9",
-        "e": u"\U0001F1EA",
-        "f": u"\U0001F1EB",
-        "g": u"\U0001F1EC",
-        "h": u"\U0001F1ED",
-        "i": u"\U0001F1EE",
-        "j": u"\U0001F1EF",
-        "k": u"\U0001F1F0",
-        "l": u"\U0001F1F1",
-        "m": u"\U0001F1F2",
-        "n": u"\U0001F1F3",
-        "o": u"\U0001F1F4",
-        "p": u"\U0001F1F5",
-        "q": u"\U0001F1F6",
-        "r": u"\U0001F1F7",
-        "s": u"\U0001F1F8",
-        "t": u"\U0001F1F9",
-        "u": u"\U0001F1FA",
-        "v": u"\U0001F1FB",
-        "w": u"\U0001F1FC",
-        "x": u"\U0001F1FD",
-        "y": u"\U0001F1FE",
-        "z": u"\U0001F1FF"}
-    s = s.lower()
-
-    newS = ''
-    for c in s:
-        if c in lookupTable:
-            newS += lookupTable[c] + " "
-        elif c in "0123456789":
-            newS += {0: "0️⃣", 1: "1️⃣", 2: "2️⃣", 3: "3️⃣", 4: "4️⃣",
-                     5: "5️⃣", 6: "6️⃣", 7: "7️⃣", 8: "8️⃣", 9: "9️⃣"}[int(c)]
-        else:
-            newS += c
-    return newS
-
+                "a": "\N{REGIONAL INDICATOR SYMBOL LETTER A}",
+                "b": "\N{REGIONAL INDICATOR SYMBOL LETTER B}",
+                "c": "\N{REGIONAL INDICATOR SYMBOL LETTER C}",
+                "d": "\N{REGIONAL INDICATOR SYMBOL LETTER D}",
+                "e": "\N{REGIONAL INDICATOR SYMBOL LETTER E}",
+                "f": "\N{REGIONAL INDICATOR SYMBOL LETTER F}",
+                "g": "\N{REGIONAL INDICATOR SYMBOL LETTER G}",
+                "h": "\N{REGIONAL INDICATOR SYMBOL LETTER H}",
+                "i": "\N{REGIONAL INDICATOR SYMBOL LETTER I}",
+                "j": "\N{REGIONAL INDICATOR SYMBOL LETTER J}",
+                "k": "\N{REGIONAL INDICATOR SYMBOL LETTER K}",
+                "l": "\N{REGIONAL INDICATOR SYMBOL LETTER L}",
+                "m": "\N{REGIONAL INDICATOR SYMBOL LETTER M}",
+                "n": "\N{REGIONAL INDICATOR SYMBOL LETTER N}",
+                "o": "\N{REGIONAL INDICATOR SYMBOL LETTER O}",
+                "p": "\N{REGIONAL INDICATOR SYMBOL LETTER P}",
+                "q": "\N{REGIONAL INDICATOR SYMBOL LETTER Q}",
+                "r": "\N{REGIONAL INDICATOR SYMBOL LETTER R}",
+                "s": "\N{REGIONAL INDICATOR SYMBOL LETTER S}",
+                "t": "\N{REGIONAL INDICATOR SYMBOL LETTER T}",
+                "u": "\N{REGIONAL INDICATOR SYMBOL LETTER U}",
+                "v": "\N{REGIONAL INDICATOR SYMBOL LETTER V}",
+                "w": "\N{REGIONAL INDICATOR SYMBOL LETTER W}",
+                "x": "\N{REGIONAL INDICATOR SYMBOL LETTER X}",
+                "y": "\N{REGIONAL INDICATOR SYMBOL LETTER Y}",
+                "z": "\N{REGIONAL INDICATOR SYMBOL LETTER Z}"}
+    return lookupTable[s]
 
 class Quiz(commands.Cog):
     '''
@@ -83,7 +72,7 @@ class Quiz(commands.Cog):
         '''
         wks = self.gc.open_by_url(url).get_worksheet(0)
 
-        questions = wks.get_all_values()
+        questions = wks.get_all_values()[1:]  # POP first row which is headers
 
         await self.listen_quiz(ctx, questions)
 
@@ -94,35 +83,46 @@ class Quiz(commands.Cog):
             # Verify list is not empty
 
             current_question = questions.pop(0)
-
             prompt = current_question[0]
-
-            options = current_question[1:-1]
-
-            correct_index = int(current_question[-1]) - 1
+            mcq = False
 
             e = discord.Embed(title=f"**{prompt}**", color=discord.Color.blue())
             e.set_author(
                 name=f"{ctx.author.display_name}, react to this post with 🛑 to stop the quiz.",
                 icon_url=ctx.author.avatar_url)
 
-            for i in range(len(options)):
-                e.add_field(
-                    name=textToEmoji(REACTIONS[i]),
-                    value=options[i],
-                    inline=False)
+            options = [op for op in current_question[1:-1] if op]  # Take only non blank entries
 
-            e.set_footer(
-                text="Studybot Quiz")
+            if current_question[-1]:
+                # Multiple choice
+                mcq = True
+                correct_index = ord(current_question[-1][0].lower()) - 97
+
+                for i in range(len(options)):
+                    e.add_field(
+                        name=textToEmoji(REACTIONS[i]),
+                        value=options[i],
+                        inline=False)
+
+                e.set_footer(
+                    text="React with the correct answer")
+            else:
+                e.set_footer(
+                    text="React with ✅ to see the answer")
 
             msg = await ctx.send(embed=e)
 
-            for i in range(len(options)):
-                await msg.add_reaction(textToEmoji(REACTIONS[i]))
+
+            if mcq:
+                for i in range(len(options)):
+                    await msg.add_reaction(textToEmoji(REACTIONS[i]))
+            else:
+                await msg.add_reaction("✅")
             await msg.add_reaction("🛑")
 
             def check(payload):
-                return payload.message_id == msg.id and not self.bot.get_user(payload.user_id).bot
+                return payload.message_id == msg.id and not self.bot.get_user(
+                    payload.user_id).bot
 
             try:
                 payload = await self.bot.wait_for(
@@ -135,13 +135,22 @@ class Quiz(commands.Cog):
                     await ctx.send("POLL TERMINATED")
                     raise asyncio.TimeoutError
 
-                correct_reaction = message.reactions[correct_index]
+                if mcq:
+                    correct_reaction = message.reactions[correct_index]
 
-                if user in (await correct_reaction.users().flatten()):
-                    await ctx.send("CORRECT")
-
+                    if user in (await correct_reaction.users().flatten()):
+                        e = discord.Embed(
+                            colour=discord.Color.green(), title="Correct",
+                            description=str(correct_reaction) + " " + options[correct_index])
+                    else:
+                        e = discord.Embed(
+                            colour=discord.Color.red(), title="Incorrect",
+                            description=str(correct_reaction) + " " + options[correct_index])
                 else:
-                    await ctx.send("INCORRECT")
+                    e = discord.Embed(
+                        colour=discord.Color.blue(), title=options[0])
+
+                await ctx.send(embed=e)
 
             except asyncio.TimeoutError:
                 cont = False
