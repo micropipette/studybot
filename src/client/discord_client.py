@@ -13,7 +13,7 @@ else:
     prefixes = commands.when_mentioned_or(
         cfg["Settings"]["prefix"].strip("\""))
 
-intents = discord.Intents.all()
+intents = discord.Intents.default()
 
 client = commands.Bot(
     command_prefix=prefixes,
