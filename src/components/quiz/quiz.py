@@ -67,13 +67,14 @@ class Quiz(commands.Cog):
     @commands.max_concurrency(20)
     async def quiz(self, ctx: commands.Context, url: str):
         '''
-        Begin a quiz, given a Studybot-compatible spreadsheet.
+        Begins a singleplayer quiz, given a Studybot-compatible spreadsheet.
         Run [-template] to get a link to a template spreadsheet.
         '''
         try:
             sheet: gspread.Spreadsheet = self.gc.open_by_url(url)
         except gspread.NoValidUrlKeyFound:
             await ctx.send("Sheet not found. Check that your sheet is shared with **anyone with link**.")
+            return
 
         await ctx.send(f"Starting quiz for `{sheet.title}`...")
 
@@ -136,17 +137,15 @@ class Quiz(commands.Cog):
             await msg.add_reaction("🛑")
 
             def check(payload):
-                return payload.message_id == msg.id and not self.bot.get_user(
-                    payload.user_id).bot
+                return payload.message_id == msg.id and payload.user_id == ctx.author.id
 
             try:
                 payload = await self.bot.wait_for(
                     "raw_reaction_add", timeout=120, check=check)
 
-                user = self.bot.get_user(payload.user_id)
                 message = await msg.channel.fetch_message(payload.message_id)
 
-                if payload.emoji.name == "🛑" and user.id == ctx.author.id:
+                if payload.emoji.name == "🛑":
                     await ctx.send(
                         "Quiz Terminated. Enter a new link to start again!")
                     raise asyncio.TimeoutError
@@ -154,7 +153,7 @@ class Quiz(commands.Cog):
                 if mcq:
                     correct_reaction = message.reactions[correct_index]
 
-                    if user in (await correct_reaction.users().flatten()):
+                    if ctx.author in (await correct_reaction.users().flatten()):
                         e = discord.Embed(
                             colour=discord.Color.green(), title="Correct",
                             description=str(correct_reaction) + " " + options[correct_index])
