@@ -8,7 +8,7 @@ from utils.utilities import get_uptime
 
 class Testing(commands.Cog):
     '''
-    General purpose commands for testing the bot.
+    Commands for testing the bot.
     '''
     def __init__(self, bot):
         self.bot: commands.Bot = bot
@@ -16,7 +16,7 @@ class Testing(commands.Cog):
     @commands.command()
     async def status(self, ctx: commands.Context):
         '''
-        Shows the current status of the bot
+        Shows the current status of the bot on the remote host.
         '''
         await ctx.send(f"**Uptime**: {round(get_uptime(), 1)}s\n"
                        f"**Version**: {version}\n"
@@ -28,7 +28,7 @@ class Testing(commands.Cog):
     @commands.is_owner()
     async def restart(self, ctx: commands.Context):
         '''
-        Restarts the bot on the remote host
+        Restarts the bot on the remote host. Must be bot owner.
         '''
         await ctx.send("Restarting...")
         await self.bot.change_presence(status=discord.Status.offline)

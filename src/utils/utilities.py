@@ -4,6 +4,7 @@ import time
 bot_prefix = cfg["Settings"]["prefix"].strip("\"")
 startup_time = None
 
+
 def set_start_time(time):
     '''
     Sets the startup time for the bot,

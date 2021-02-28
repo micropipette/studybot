@@ -1,5 +1,4 @@
 import discord
-from discord.embeds import Embed
 from discord.ext import commands
 
 import gspread
@@ -42,9 +41,11 @@ def textToEmoji(s) -> str:
                 "z": "\N{REGIONAL INDICATOR SYMBOL LETTER Z}"}
     return lookupTable[s]
 
+
 class Quiz(commands.Cog):
     '''
-    Quiz module
+    Run multiple-choice or flashcard quiz sessions using your own question banks!
+    Coming soon: question banks from the web.
     '''
     def __init__(self, bot):
         self.bot: commands.Bot = bot
@@ -59,18 +60,21 @@ class Quiz(commands.Cog):
         '''
         Pulls raw data from spreadsheet for debugging
         '''
-
         wks = self.gc.open_by_url(url).get_worksheet(0)
-
         await ctx.send(wks.get_all_values())
 
     @commands.command()
     @commands.max_concurrency(20)
     async def quiz(self, ctx: commands.Context, url: str):
         '''
-        Multiple choice questions.
+        Begin a quiz, given a Studybot-compatible spreadsheet.
+        Run `-template` to get a link to a template spreadsheet.
         '''
-        wks = self.gc.open_by_url(url).get_worksheet(0)
+        sheet: gspread.Spreadsheet = self.gc.open_by_url(url)
+
+        await ctx.send(f"Starting quiz for `{sheet.title}`...")
+
+        wks = sheet.get_worksheet(0)
 
         questions = wks.get_all_values()[1:]  # POP first row which is headers
 
@@ -86,12 +90,20 @@ class Quiz(commands.Cog):
             prompt = current_question[0]
             mcq = False
 
-            e = discord.Embed(title=f"**{prompt}**", color=discord.Color.blue())
+            e = discord.Embed(color=discord.Color.blue())
+
+            if len(prompt) < 252:
+                e.title = f"**{prompt}**"
+            else:
+                e.description = f"**{prompt}**\n"
+
             e.set_author(
                 name=f"{ctx.author.display_name}, react to this post with 🛑 to stop the quiz.",
                 icon_url=ctx.author.avatar_url)
 
-            options = [op for op in current_question[1:-1] if op]  # Take only non blank entries
+            options = [
+                op for op in current_question[
+                    1:-1] if op]  # Take only non blank entries
 
             if current_question[-1]:
                 # Multiple choice
@@ -99,10 +111,7 @@ class Quiz(commands.Cog):
                 correct_index = ord(current_question[-1][0].lower()) - 97
 
                 for i in range(len(options)):
-                    e.add_field(
-                        name=textToEmoji(REACTIONS[i]),
-                        value=options[i],
-                        inline=False)
+                    e.description += f"{textToEmoji(REACTIONS[i])}: {options[i]}\n"
 
                 e.set_footer(
                     text="React with the correct answer")
@@ -111,7 +120,6 @@ class Quiz(commands.Cog):
                     text="React with ✅ to see the answer")
 
             msg = await ctx.send(embed=e)
-
 
             if mcq:
                 for i in range(len(options)):
@@ -132,7 +140,8 @@ class Quiz(commands.Cog):
                 message = await msg.channel.fetch_message(payload.message_id)
 
                 if payload.emoji.name == "🛑" and user.id == ctx.author.id:
-                    await ctx.send("POLL TERMINATED")
+                    await ctx.send(
+                        "Quiz Terminated. Enter a new link to start again!")
                     raise asyncio.TimeoutError
 
                 if mcq:
@@ -148,11 +157,30 @@ class Quiz(commands.Cog):
                             description=str(correct_reaction) + " " + options[correct_index])
                 else:
                     e = discord.Embed(
-                        colour=discord.Color.blue(), title=options[0])
+                        colour=discord.Color.blue())
+
+                    if len(options[0]) < 256:
+                        e.title = options[0]
+                    else:
+                        e.description = options[0]
 
                 await ctx.send(embed=e)
 
             except asyncio.TimeoutError:
                 cont = False
         if not questions:
-            await ctx.send("QUESTION DECK EXHAUSTED")
+            await ctx.send(
+                "Question deck has been exhausted. Enter a new link to start again!")
+
+    @commands.command()
+    async def template(self, ctx: commands.Context):
+        '''
+        Gets the link for the template spreadsheet.
+
+        Make a copy of this spreadsheet, and fill with your own questions!
+        '''
+        await ctx.send('''Template spreadsheet:
+        https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0/edit?usp=sharing
+
+        **Make a copy of this spreadsheet, and edit with your own questions!**
+        ''')
