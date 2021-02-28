@@ -72,7 +72,7 @@ class Quiz(commands.Cog):
         '''
         try:
             sheet: gspread.Spreadsheet = self.gc.open_by_url(url)
-        except gspread.SpreadsheetNotFound:
+        except gspread.NoValidUrlKeyFound:
             await ctx.send("Sheet not found. Check that your sheet is shared with **anyone with link**.")
 
         await ctx.send(f"Starting quiz for `{sheet.title}`...")
