@@ -7,7 +7,7 @@ logger.setLevel(logging.INFO)
 # Configure loggers
 c_handler = logging.StreamHandler()
 f_handler = logging.FileHandler(
-    filename="bot.log", mode="w", encoding="utf-8")
+    filename="studybot.log", mode="w", encoding="utf-8")
 c_handler.setLevel(logging.INFO)
 f_handler.setLevel(logging.INFO)
 

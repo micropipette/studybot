@@ -38,5 +38,9 @@ async def on_error(event, *args, **kwargs):
 @client.event
 async def on_command_error(ctx: commands.Context, exception):
     # When a command fails to execute
-    await ctx.send(f"Error: {exception}", reference=ctx.message)
     logger.exception("Command Error", exc_info=exception)
+    with open("studybot.log", "rb") as f:
+        await ctx.send(
+            f"Error: {exception}\n\n**Attached is a log of what went wrong. Please send this to `itchono#3597`**",
+            reference=ctx.message,
+            file=discord.File(f, filename="studybot_log.txt"))

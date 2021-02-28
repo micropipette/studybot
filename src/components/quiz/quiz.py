@@ -68,9 +68,12 @@ class Quiz(commands.Cog):
     async def quiz(self, ctx: commands.Context, url: str):
         '''
         Begin a quiz, given a Studybot-compatible spreadsheet.
-        Run `-template` to get a link to a template spreadsheet.
+        Run [-template] to get a link to a template spreadsheet.
         '''
-        sheet: gspread.Spreadsheet = self.gc.open_by_url(url)
+        try:
+            sheet: gspread.Spreadsheet = self.gc.open_by_url(url)
+        except gspread.SpreadsheetNotFound:
+            await ctx.send("Sheet not found. Check that your sheet is shared with **anyone with link**.")
 
         await ctx.send(f"Starting quiz for `{sheet.title}`...")
 
@@ -92,10 +95,12 @@ class Quiz(commands.Cog):
 
             e = discord.Embed(color=discord.Color.blue())
 
+            desc_text = ""
+
             if len(prompt) < 252:
                 e.title = f"**{prompt}**"
             else:
-                e.description = f"**{prompt}**\n"
+                desc_text = f"**{prompt}**\n"
 
             e.set_author(
                 name=f"{ctx.author.display_name}, react to this post with 🛑 to stop the quiz.",
@@ -111,7 +116,9 @@ class Quiz(commands.Cog):
                 correct_index = ord(current_question[-1][0].lower()) - 97
 
                 for i in range(len(options)):
-                    e.description += f"{textToEmoji(REACTIONS[i])}: {options[i]}\n"
+                    desc_text += f"{textToEmoji(REACTIONS[i])}: {options[i]}\n"
+
+                e.description = desc_text
 
                 e.set_footer(
                     text="React with the correct answer")
@@ -182,5 +189,6 @@ class Quiz(commands.Cog):
         await ctx.send('''Template spreadsheet:
         https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0/edit?usp=sharing
 
-        **Make a copy of this spreadsheet, and edit with your own questions!**
+        **Make a copy of this spreadsheet, and edit with your own questions!
+          Don't forget to set the sheet to `anyone with link can view`**
         ''')
