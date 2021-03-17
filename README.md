@@ -15,5 +15,16 @@ If you are contributing, and would like to add a new library to the code, please
 2. Update the `requirements.in` with the names of the new packages you want to add. (optional)
 3. Run `pip-compile requirements.in > requirements.txt`, or run `pip-compile requirements.in` and copy the output to replace the contents of `requirements.txt`.
 
+# Features
+* Create your own set of questions to study off of on any platform which can access Google Sheets
+* Practice your questions from the comfort of Discord
+* Several different question types, ranging from multiple choice, flashcards, (coming soon) long answer & multi-part questions
+
+
 # Timeline
 2021 January 27: Start
+
+2021 February 15: Basic implementation of quiz functionality through Google Sheets API for question storage
+
+2021 March 16: Added support for images, performance improvements
+
