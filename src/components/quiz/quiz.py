@@ -92,6 +92,7 @@ class Quiz(commands.Cog):
 
             current_question = questions.pop(0)
             prompt = current_question[0]
+            image_url = current_question[1]
             mcq = False
 
             e = discord.Embed(color=discord.Color.blue())
@@ -103,29 +104,33 @@ class Quiz(commands.Cog):
             else:
                 desc_text = f"**{prompt}**\n"
 
-            e.set_author(
-                name=f"{ctx.author.display_name}, react to this post with 🛑 to stop the quiz.",
-                icon_url=ctx.author.avatar_url)
+            e.set_footer(
+                    text=f"{ctx.author.display_name}, react to this post with 🛑 to stop the quiz.")
 
             options = [
                 op for op in current_question[
-                    1:-1] if op]  # Take only non blank entries
+                    2:-1] if op]  # Take only non blank entries
+
+            if image_url:
+                e.set_image(url=image_url)
 
             if current_question[-1]:
                 # Multiple choice
                 mcq = True
-                correct_index = ord(current_question[-1][0].lower()) - 97
+                correct_index = ord(current_question[-1][0].lower()) - 96
 
                 for i in range(len(options)):
                     desc_text += f"{textToEmoji(REACTIONS[i])}: {options[i]}\n"
 
                 e.description = desc_text
 
-                e.set_footer(
-                    text="React with the correct answer")
+                e.set_author(
+                    name="React with the correct answer",
+                    icon_url=ctx.author.avatar_url)
             else:
-                e.set_footer(
-                    text="React with ✅ to see the answer")
+                e.set_author(
+                    name="React with ✅ to see the answer",
+                    icon_url=ctx.author.avatar_url)
 
             msg = await ctx.send(embed=e)
 
@@ -139,19 +144,12 @@ class Quiz(commands.Cog):
             def check(payload):
                 return payload.message_id == msg.id and payload.user_id == ctx.author.id
 
-            try:
-                payload = await self.bot.wait_for(
-                    "raw_reaction_add", timeout=120, check=check)
-
-                message = await msg.channel.fetch_message(payload.message_id)
-
-                if payload.emoji.name == "🛑":
-                    await ctx.send(
-                        "Quiz Terminated. Enter a new link to start again!")
-                    raise asyncio.TimeoutError
-
+            async def send_result(emoji):
+                '''
+                Sends the result of a quiz given the user's response
+                '''
                 if mcq:
-                    correct_reaction = message.reactions[correct_index]
+                    correct_reaction = msg.reactions[correct_index]
 
                     if ctx.author in (await correct_reaction.users().flatten()):
                         e = discord.Embed(
@@ -161,6 +159,7 @@ class Quiz(commands.Cog):
                         e = discord.Embed(
                             colour=discord.Color.red(), title="Incorrect",
                             description=str(correct_reaction) + " " + options[correct_index])
+                    e.set_footer(text=f"You Answered: {emoji}")
                 else:
                     e = discord.Embed(
                         colour=discord.Color.blue())
@@ -172,8 +171,26 @@ class Quiz(commands.Cog):
 
                 await ctx.send(embed=e)
 
+            try:
+                # Refresh quiz to see if anyone has responded even before the listener is ready
+                for reaction in msg.reactions:
+                    if reaction.count > 1 and ctx.author in (await reaction.users().flatten()):
+                        await send_result(reaction.emoji)
+                        continue
+
+                payload = await self.bot.wait_for(
+                    "raw_reaction_add", timeout=120, check=check)
+
+                if payload.emoji.name == "🛑":
+                    await ctx.send(
+                        "Quiz Terminated. Enter a new link to start again!")
+                    raise asyncio.TimeoutError
+
+                await send_result(payload.emoji)
+
             except asyncio.TimeoutError:
                 cont = False
+
         if not questions:
             await ctx.send(
                 "Question deck has been exhausted. Enter a new link to start again!")
