@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from config import version
 import sys
+import os
 
 from utils.utilities import get_uptime
 
@@ -34,3 +35,12 @@ class Testing(commands.Cog):
         await self.bot.change_presence(status=discord.Status.offline)
         await self.bot.logout()
         sys.exit(0)
+
+    @commands.command()
+    @commands.is_owner()
+    async def hardrestart(self, ctx: commands.Context):
+        '''
+        Hard restarts the bot on replit
+        '''
+        await ctx.send("Hard Restarting...")
+        os.system("kill 1")

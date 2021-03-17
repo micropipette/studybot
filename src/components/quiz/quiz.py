@@ -4,6 +4,7 @@ from discord.ext import commands
 import gspread
 import os
 import asyncio
+import random
 
 REACTIONS = "abcdefghijklmnopqrstuvwxyz"
 
@@ -40,6 +41,63 @@ def textToEmoji(s) -> str:
                 "y": "\N{REGIONAL INDICATOR SYMBOL LETTER Y}",
                 "z": "\N{REGIONAL INDICATOR SYMBOL LETTER Z}"}
     return lookupTable[s]
+
+
+def emojiToText(s) -> str:
+    '''
+    Converts emoji to closest real text representation (lowercase output)
+    Note: Will strip spaces.
+    '''
+    lookupTable = {
+        u"\U0001F1E6": "a",
+        u"\U0001F1E7": "b",
+        u"\U0001F1E8": "c",
+        u"\U0001F1E9": "d",
+        u"\U0001F1EA": "e",
+        u"\U0001F1EB": "f",
+        u"\U0001F1EC": "g",
+        u"\U0001F1ED": "h",
+        u"\U0001F1EE": "i",
+        u"\U0001F1EF": "j",
+        u"\U0001F1F0": "k",
+        u"\U0001F1F1": "l",
+        u"\U0001F1F2": "m",
+        u"\U0001F1F3": "n",
+        u"\U0001F1F4": "o",
+        u"\U0001F1F5": "p",
+        u"\U0001F1F6": "q",
+        u"\U0001F1F7": "r",
+        u"\U0001F1F8": "s",
+        u"\U0001F1F9": "t",
+        u"\U0001F1FA": "u",
+        u"\U0001F1FB": "v",
+        u"\U0001F1FC": "w",
+        u"\U0001F1FD": "x",
+        u"\U0001F1FE": "y",
+        u"\U0001F1FF": "z",
+        "0️⃣": 0,
+        "1️⃣": 1,
+        "2️⃣": 2,
+        "3️⃣": 3,
+        "4️⃣": 4,
+        "5️⃣": 5,
+        "6️⃣": 6,
+        "7️⃣": 7,
+        "8️⃣": 8,
+        "9️⃣": 9}
+
+    newS = ''
+
+    i = 0
+
+    while i < len(s):
+        if s[i] in lookupTable:
+            newS += lookupTable[s[i]]
+            i += 1
+        else:
+            newS += s[i]
+        i += 1
+    return newS
 
 
 class Quiz(commands.Cog):
@@ -82,6 +140,8 @@ class Quiz(commands.Cog):
 
         questions = wks.get_all_values()[1:]  # POP first row which is headers
 
+        random.shuffle(questions)
+
         await self.listen_quiz(ctx, questions)
 
     async def listen_quiz(self, ctx: commands.Context, questions):
@@ -92,6 +152,7 @@ class Quiz(commands.Cog):
 
             current_question = questions.pop(0)
             prompt = current_question[0]
+            image_url = current_question[1]
             mcq = False
 
             e = discord.Embed(color=discord.Color.blue())
@@ -103,13 +164,15 @@ class Quiz(commands.Cog):
             else:
                 desc_text = f"**{prompt}**\n"
 
-            e.set_author(
-                name=f"{ctx.author.display_name}, react to this post with 🛑 to stop the quiz.",
-                icon_url=ctx.author.avatar_url)
+            e.set_footer(
+                    text=f"{ctx.author.display_name}, react to this post with 🛑 to stop the quiz.")
 
             options = [
                 op for op in current_question[
-                    1:-1] if op]  # Take only non blank entries
+                    2:-1] if op]  # Take only non blank entries
+
+            if image_url:
+                e.set_image(url=image_url)
 
             if current_question[-1]:
                 # Multiple choice
@@ -121,11 +184,13 @@ class Quiz(commands.Cog):
 
                 e.description = desc_text
 
-                e.set_footer(
-                    text="React with the correct answer")
+                e.set_author(
+                    name="React with the correct answer",
+                    icon_url=ctx.author.avatar_url)
             else:
-                e.set_footer(
-                    text="React with ✅ to see the answer")
+                e.set_author(
+                    name="React with ✅ to see the answer",
+                    icon_url=ctx.author.avatar_url)
 
             msg = await ctx.send(embed=e)
 
@@ -139,17 +204,12 @@ class Quiz(commands.Cog):
             def check(payload):
                 return payload.message_id == msg.id and payload.user_id == ctx.author.id
 
-            try:
-                payload = await self.bot.wait_for(
-                    "raw_reaction_add", timeout=120, check=check)
+            message = await msg.channel.fetch_message(msg.id)
 
-                message = await msg.channel.fetch_message(payload.message_id)
-
-                if payload.emoji.name == "🛑":
-                    await ctx.send(
-                        "Quiz Terminated. Enter a new link to start again!")
-                    raise asyncio.TimeoutError
-
+            async def send_result(emoji):
+                '''
+                Sends the result of a quiz given the user's response
+                '''
                 if mcq:
                     correct_reaction = message.reactions[correct_index]
 
@@ -161,6 +221,7 @@ class Quiz(commands.Cog):
                         e = discord.Embed(
                             colour=discord.Color.red(), title="Incorrect",
                             description=str(correct_reaction) + " " + options[correct_index])
+                    e.set_footer(text=f"You Answered: {emojiToText(emoji).upper()}")
                 else:
                     e = discord.Embed(
                         colour=discord.Color.blue())
@@ -172,8 +233,28 @@ class Quiz(commands.Cog):
 
                 await ctx.send(embed=e)
 
+            try:
+                # Refresh quiz to see if anyone has responded even before the listener is ready
+                listen = True
+                for reaction in message.reactions:
+                    if reaction.count > 1 and ctx.author in (await reaction.users().flatten()):
+                        listen = False
+                        await send_result(reaction.emoji)
+
+                if listen:
+                    payload = await self.bot.wait_for(
+                        "raw_reaction_add", timeout=120, check=check)
+
+                    if payload.emoji.name == "🛑":
+                        await ctx.send(
+                            "Quiz Terminated. Enter a new link to start again!")
+                        raise asyncio.TimeoutError
+
+                    await send_result(payload.emoji)
+
             except asyncio.TimeoutError:
                 cont = False
+
         if not questions:
             await ctx.send(
                 "Question deck has been exhausted. Enter a new link to start again!")
