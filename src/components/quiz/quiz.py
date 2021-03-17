@@ -221,7 +221,7 @@ class Quiz(commands.Cog):
                         e = discord.Embed(
                             colour=discord.Color.red(), title="Incorrect",
                             description=str(correct_reaction) + " " + options[correct_index])
-                    e.set_footer(text=f"You Answered: {emojiToText(emoji).upper()}")
+                    e.set_footer(text=f"You Answered: {emojiToText(str(emoji)).upper()}")
                 else:
                     e = discord.Embed(
                         colour=discord.Color.blue())
