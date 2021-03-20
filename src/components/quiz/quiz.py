@@ -124,6 +124,7 @@ class Quiz(commands.Cog):
                 {"locale": locale, "name": name}):
 
             if document["user"] == ctx.author.id:
+                collection("bindings").delete_one({"locale": locale, "name": name})
                 await ctx.message.add_reaction("👍")
 
                 if ctx.guild:
