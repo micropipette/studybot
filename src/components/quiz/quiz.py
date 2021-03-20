@@ -168,7 +168,7 @@ class Quiz(commands.Cog):
                     text=f"{ctx.author.display_name}, react to this post with 🛑 to stop the quiz.")
 
             options = [
-                op for op in current_question[
+                op.strip("\n") for op in current_question[
                     2:-1] if op]  # Take only non blank entries
 
             if image_url:

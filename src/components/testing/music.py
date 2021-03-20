@@ -61,7 +61,7 @@ class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
+    @commands.command(hidden=True)
     async def join(self, ctx, *, channel: discord.VoiceChannel):
         """Joins a voice channel"""
 
@@ -70,7 +70,7 @@ class Music(commands.Cog):
 
         await channel.connect()
 
-    @commands.command()
+    @commands.command(hidden=True)
     async def play(self, ctx, *, url):
         """Plays from a url (almost anything youtube_dl supports)"""
 
@@ -80,7 +80,7 @@ class Music(commands.Cog):
 
         await ctx.send('Now playing: {}'.format(player.title))
 
-    @commands.command()
+    @commands.command(hidden=True)
     async def stream(self, ctx, *, url):
         """Streams from a url (same as yt, but doesn't predownload)"""
 
@@ -90,7 +90,7 @@ class Music(commands.Cog):
 
         await ctx.send('Now playing: {}'.format(player.title))
 
-    @commands.command()
+    @commands.command(hidden=True)
     async def volume(self, ctx, volume: int):
         """Changes the player's volume"""
 
@@ -100,7 +100,7 @@ class Music(commands.Cog):
         ctx.voice_client.source.volume = volume / 100
         await ctx.send("Changed volume to {}%".format(volume))
 
-    @commands.command()
+    @commands.command(hidden=True)
     async def stop(self, ctx):
         """Stops and disconnects the bot from voice"""
 
