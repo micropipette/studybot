@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 from utils.utilities import textToEmoji, emojiToText
 from db import collection
+from .ib_qb_scraper import IB
 
 REACTIONS = "abcdefghijklmnopqrstuvwxyz"
 
@@ -33,6 +34,17 @@ class Quiz(commands.Cog):
         '''
         wks = self.gc.open_by_url(url).get_worksheet(0)
         await ctx.send(wks.get_all_values())
+
+    @commands.command()
+    @commands.max_concurrency(20)
+    async def IB(self, ctx: commands.Context, url: str = "https://www.ibdocuments.com/IB%20QUESTIONBANKS/4.%20Fourth%20Edition/questionbank.ibo.org/en/teachers/00000/questionbanks/46-dp-physics/questions/105764.html"):
+        '''
+        Displays a MCQ from the IB questionbank.
+        '''
+        if question := await IB(url):
+            await listen_quiz(ctx, [question])
+        else:
+            await ctx.send("Invalid URL Provided.")
 
     @commands.command()
     @commands.max_concurrency(20)
