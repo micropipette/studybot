@@ -42,6 +42,8 @@ async def IB(url):
 
         question = [line for line in segments[0].splitlines() if len(line) > 0] + \
             [line for line in segments[1].splitlines() if len(line) > 0]
+
+        question.insert(1, "")
         return question
 
     else:
