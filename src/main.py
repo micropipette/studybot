@@ -7,6 +7,7 @@ from client import client as bot
 from config import cfg
 from hosting.keep_alive import keep_alive
 from utils.utilities import set_start_time, get_uptime
+from db import mongo_startup
 from utils.logger import logger
 from discord import HTTPException
 
@@ -15,6 +16,7 @@ dotenv.load_dotenv()  # Load .env file, prior to components loading
 
 # Startup operations
 set_start_time(time.perf_counter())
+mongo_startup()
 
 for c in components.cogs:
     bot.add_cog(c(bot))
@@ -40,7 +42,6 @@ async def on_ready():
     logger.info("Server List:\n" +
                 "\n".join(
                     f"\t{server.name} "
-                    f"({len(server.members)} members)"
                     for server in bot.guilds))
 
     logger.info(f"Startup completed in {round(get_uptime(),3)}s")
