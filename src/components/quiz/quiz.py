@@ -41,10 +41,15 @@ class Quiz(commands.Cog):
         '''
         Displays a MCQ from the IB questionbank.
         '''
-        if question := await IB(url):
-            await listen_quiz(ctx, [question])
-        else:
-            await ctx.send("Invalid URL Provided.")
+        try:
+            question = await IB(url)
+
+            if type(question) == str:
+                await ctx.send(f"Question Type is: {question}, which is not supported right now.")
+            else:
+                await listen_quiz(ctx, [question])
+        except Exception:
+            await ctx.send("Could not scrape the URL provided.")
 
     @commands.command()
     @commands.max_concurrency(20)
@@ -159,7 +164,10 @@ class Quiz(commands.Cog):
         '''
         locale = ctx.guild.id if ctx.guild else ctx.author.id
 
-        e = discord.Embed(title=f"All bound sheets in {ctx.guild.name}")
+        if ctx.guild:
+            e = discord.Embed(title=f"All bound sheets in {ctx.guild.name}")
+        else:
+            e = discord.Embed(title=f"All bound sheets in this DM")
 
         for document in collection("bindings").find({"locale": locale}):
             e.add_field(name=document["name"], value=f"[Link to Sheet]({document['URL']})")
