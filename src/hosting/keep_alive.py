@@ -29,9 +29,7 @@ def main():
 
     return render_template("index.html", uptime=str(uptime),
                            numservers=len(bot.guilds),
-                           user=str(bot.user), serverlist=[f"{server.name} "
-                           f"({len(server.members)} members)"
-                                                           for server in bot.guilds],
+                           user=str(bot.user),
                            loglines=content,
                            version=version)
 
