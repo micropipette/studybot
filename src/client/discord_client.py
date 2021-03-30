@@ -18,10 +18,13 @@ intents = discord.Intents.default()
 client = commands.Bot(
     command_prefix=prefixes,
     case_insensitive=True,
-    help_command=commands.MinimalHelpCommand(no_category="Quiz"),
+    help_command=commands.MinimalHelpCommand(),
     intents=intents,
     status=discord.Status.online,
     activity=discord.Game(cfg["Settings"]["Status"]))
+
+help = client.get_command("help")
+help.hidden = True
 
 
 @client.event
