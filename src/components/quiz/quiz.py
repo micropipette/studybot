@@ -36,7 +36,7 @@ class Quiz(commands.Cog):
         await ctx.send(wks.get_all_values())
 
     @commands.command()
-    @commands.max_concurrency(20)
+    @commands.max_concurrency(30)
     async def IB(self, ctx: commands.Context, url: str = "https://www.ibdocuments.com/IB%20QUESTIONBANKS/4.%20Fourth%20Edition/questionbank.ibo.org/en/teachers/00000/questionbanks/46-dp-physics/questions/105764.html"):
         '''
         Displays a MCQ from the IB questionbank.
@@ -53,7 +53,7 @@ class Quiz(commands.Cog):
             await ctx.send("Could not scrape the URL provided.")
 
     @commands.command()
-    @commands.max_concurrency(20)
+    @commands.max_concurrency(30)
     async def quiz(self, ctx: commands.Context, *, sheet: str = None):
         '''
         Begins a singleplayer quiz, given a Studybot-compatible spreadsheet.
@@ -61,7 +61,7 @@ class Quiz(commands.Cog):
         Create a sheet using `-template`.
         '''
         if not sheet:
-            await ctx.send("Please provide a Sheets URL or a valid bound sheet name.\nFor example, `-quiz https://docs.google.com/spreadsheets/d/1rTNdrubipOOdWL0LbADo2mPcruaZ_l0VZi2jdvYanJw/edit#gid=0`\n\nCreate a quiz spreadsheet by running `-template` and following the instructions")
+            await ctx.send("Please provide a Sheets URL or a valid bound sheet name.\nFor example, `-quiz https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0`\n\nCreate a quiz spreadsheet by running `-template` and following the instructions")
             return
 
         if document := collection("bindings").find_one({"name": sheet}):
@@ -104,10 +104,10 @@ class Quiz(commands.Cog):
     async def bind(self, ctx: commands.Context, url: str = None, *, name: str = None):
         '''
         Binds a given spreadsheet to this server or DM to a custom name.
-        e.g. `-bind https://docs.google.com/spreadsheets/d/1rTNdrubipOOdWL0LbADo2mPcruaZ_l0VZi2jdvYanJw/edit#gid=0 Fun Trivia` 
+        e.g. `-bind https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0 Fun Trivia` 
         '''
         if not url or not name:
-            await ctx.send("Please provide a Sheets URL or a valid bound sheet name.\nFor example, `-bind https://docs.google.com/spreadsheets/d/1rTNdrubipOOdWL0LbADo2mPcruaZ_l0VZi2jdvYanJw/edit#gid=0 Fun Trivia`\n\nCreate a quiz spreadsheet by running `-template` and following the instructions")
+            await ctx.send("Please provide a Sheets URL or a valid bound sheet name.\nFor example, `-bind https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0 Fun Trivia`\n\nCreate a quiz spreadsheet by running `-template` and following the instructions")
             return
 
         locale = ctx.guild.id if ctx.guild else ctx.author.id
