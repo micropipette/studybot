@@ -61,7 +61,7 @@ class Quiz(commands.Cog):
         Create a sheet using `-template`.
         '''
         if not sheet:
-            await ctx.send("Please provide a Sheets URL or a valid bound sheet name.\nFor example, `-quiz https://docs.google.com/spreadsheets/d/1rTNdrubipOOdWL0LbADo2mPcruaZ_l0VZi2jdvYanJw/edit#gid=0`\nCreate a quiz spreadsheet by running `-template` and following the instructions")
+            await ctx.send("Please provide a Sheets URL or a valid bound sheet name.\nFor example, `-quiz https://docs.google.com/spreadsheets/d/1rTNdrubipOOdWL0LbADo2mPcruaZ_l0VZi2jdvYanJw/edit#gid=0`\n\nCreate a quiz spreadsheet by running `-template` and following the instructions")
             return
 
         if document := collection("bindings").find_one({"name": sheet}):
@@ -106,8 +106,9 @@ class Quiz(commands.Cog):
         Binds a given spreadsheet to this server or DM to a custom name.
         e.g. `-bind https://docs.google.com/spreadsheets/d/1rTNdrubipOOdWL0LbADo2mPcruaZ_l0VZi2jdvYanJw/edit#gid=0 Fun Trivia` 
         '''
-        if not url and not name:
-            await ctx.send("Please provide a Sheets URL or a valid bound sheet name.\nFor example, `-bind https://docs.google.com/spreadsheets/d/1rTNdrubipOOdWL0LbADo2mPcruaZ_l0VZi2jdvYanJw/edit#gid=0 Fun Trivia`\nCreate a quiz spreadsheet by running `-template` and following the instructions")
+        if not url or not name:
+            await ctx.send("Please provide a Sheets URL or a valid bound sheet name.\nFor example, `-bind https://docs.google.com/spreadsheets/d/1rTNdrubipOOdWL0LbADo2mPcruaZ_l0VZi2jdvYanJw/edit#gid=0 Fun Trivia`\n\nCreate a quiz spreadsheet by running `-template` and following the instructions")
+            return
 
         locale = ctx.guild.id if ctx.guild else ctx.author.id
 
@@ -148,6 +149,7 @@ class Quiz(commands.Cog):
         '''
         if not name:
             await ctx.send("Please provide the name a of a bound sheet you own. e.g. `-unbind Fun Trivia`")
+            return
 
         locale = ctx.guild.id if ctx.guild else ctx.author.id
 
@@ -175,6 +177,7 @@ class Quiz(commands.Cog):
     async def sheets(self, ctx: commands.Context):
         '''
         Lists all bound sheets on the server.
+        To bind a sheet, use the `-bind` command.
         '''
         locale = ctx.guild.id if ctx.guild else ctx.author.id
 
