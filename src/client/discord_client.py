@@ -18,10 +18,7 @@ intents = discord.Intents.default()
 client = commands.Bot(
     command_prefix=prefixes,
     case_insensitive=True,
-    help_command=PrettyHelp(
-        no_category="Help Command",
-        color=discord.Color.blue(),
-        sort_commands=False),
+    help_command=commands.MinimalHelpCommand(),
     intents=intents,
     status=discord.Status.online,
     activity=discord.Game(cfg["Settings"]["Status"]))
@@ -38,9 +35,15 @@ async def on_error(event, *args, **kwargs):
 @client.event
 async def on_command_error(ctx: commands.Context, exception):
     # When a command fails to execute
-    logger.exception("Command Error", exc_info=exception)
-    with open("studybot.log", "rb") as f:
-        await ctx.send(
-            f"Error: {exception}\n\n**Attached is a log of what went wrong. Please send this to `itchono#3597`**",
-            reference=ctx.message,
-            file=discord.File(f, filename="studybot_log.txt"))
+
+    if type(exception) == commands.CommandNotFound:
+        await ctx.send(exception)
+    else:
+        logger.exception("Command Error", exc_info=exception)
+        await ctx.send("An unexpected error occurred. If this problem persists, please let `itchono#3597` know!")
+
+    # with open("studybot.log", "rb") as f:
+    #     await ctx.send(
+    #         f"Error: {exception}\n\n**Attached is a log of what went wrong. Please send this to `itchono#3597`**",
+    #         reference=ctx.message,
+    #         file=discord.File(f, filename="studybot_log.txt"))

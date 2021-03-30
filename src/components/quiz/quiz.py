@@ -40,6 +40,7 @@ class Quiz(commands.Cog):
     async def IB(self, ctx: commands.Context, url: str = "https://www.ibdocuments.com/IB%20QUESTIONBANKS/4.%20Fourth%20Edition/questionbank.ibo.org/en/teachers/00000/questionbanks/46-dp-physics/questions/105764.html"):
         '''
         Displays a MCQ from the IB questionbank.
+        e.g. `-IB https://www.ibdocuments.com/IB%20QUESTIONBANKS/4.%20Fourth%20Edition/questionbank.ibo.org/en/teachers/00000/questionbanks/46-dp-physics/questions/105764.html`
         '''
         try:
             question = await IB(url)
@@ -53,11 +54,16 @@ class Quiz(commands.Cog):
 
     @commands.command()
     @commands.max_concurrency(20)
-    async def quiz(self, ctx: commands.Context, *, sheet: str):
+    async def quiz(self, ctx: commands.Context, *, sheet: str = None):
         '''
         Begins a singleplayer quiz, given a Studybot-compatible spreadsheet.
         Provide a valid Studybot sheet URL or the name of a Bound spreadsheet.
+        Create a sheet using `-template`.
         '''
+        if not sheet:
+            await ctx.send("Please provide a Sheets URL or a valid bound sheet name.\nFor example, `-quiz https://docs.google.com/spreadsheets/d/1rTNdrubipOOdWL0LbADo2mPcruaZ_l0VZi2jdvYanJw/edit#gid=0`\nCreate a quiz spreadsheet by running `-template` and following the instructions")
+            return
+
         if document := collection("bindings").find_one({"name": sheet}):
             url = document["URL"]
         else:
@@ -98,6 +104,7 @@ class Quiz(commands.Cog):
     async def bind(self, ctx: commands.Context, url: str, *, name: str):
         '''
         Binds a given spreadsheet to this server or DM to a custom name.
+        e.g. `-bind https://docs.google.com/spreadsheets/d/1rTNdrubipOOdWL0LbADo2mPcruaZ_l0VZi2jdvYanJw/edit#gid=0 funtrivia` 
         '''
         locale = ctx.guild.id if ctx.guild else ctx.author.id
 
@@ -134,6 +141,7 @@ class Quiz(commands.Cog):
     async def unbind(self, ctx: commands.Context, *, name: str):
         '''
         Unbinds the spreadsheet with the specified name, if you own it.
+        e.g. `-unbind funtrivia` 
         '''
         locale = ctx.guild.id if ctx.guild else ctx.author.id
 

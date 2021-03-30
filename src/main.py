@@ -38,12 +38,6 @@ async def on_ready():
     '''
     Message cache etc. is ready
     '''
-
-    logger.info("Server List:\n" +
-                "\n".join(
-                    f"\t{server.name} "
-                    for server in bot.guilds))
-
     logger.info(f"Startup completed in {round(get_uptime(),3)}s")
 
 if cfg["Hosting"]["ping"] == "True":
