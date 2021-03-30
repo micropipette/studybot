@@ -18,7 +18,7 @@ intents = discord.Intents.default()
 client = commands.Bot(
     command_prefix=prefixes,
     case_insensitive=True,
-    help_command=commands.MinimalHelpCommand(),
+    help_command=commands.MinimalHelpCommand(no_category="Quiz"),
     intents=intents,
     status=discord.Status.online,
     activity=discord.Game(cfg["Settings"]["Status"]))

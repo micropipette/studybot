@@ -14,7 +14,7 @@ class Testing(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
 
-    @commands.command()
+    @commands.command(hidden=True)
     async def status(self, ctx: commands.Context):
         '''
         Shows the current status of the bot on the remote host.
@@ -25,7 +25,7 @@ class Testing(commands.Cog):
                        f"**API Latency**: {round(self.bot.latency, 4)}s\n"
                        f"Running discord.py version {discord.__version__}")
 
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
     async def restart(self, ctx: commands.Context):
         '''
@@ -36,7 +36,7 @@ class Testing(commands.Cog):
         await self.bot.logout()
         sys.exit(0)
 
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
     async def hardrestart(self, ctx: commands.Context):
         '''

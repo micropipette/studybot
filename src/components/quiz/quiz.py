@@ -101,11 +101,14 @@ class Quiz(commands.Cog):
         ''')
 
     @commands.command()
-    async def bind(self, ctx: commands.Context, url: str, *, name: str):
+    async def bind(self, ctx: commands.Context, url: str = None, *, name: str = None):
         '''
         Binds a given spreadsheet to this server or DM to a custom name.
-        e.g. `-bind https://docs.google.com/spreadsheets/d/1rTNdrubipOOdWL0LbADo2mPcruaZ_l0VZi2jdvYanJw/edit#gid=0 funtrivia` 
+        e.g. `-bind https://docs.google.com/spreadsheets/d/1rTNdrubipOOdWL0LbADo2mPcruaZ_l0VZi2jdvYanJw/edit#gid=0 Fun Trivia` 
         '''
+        if not url and not name:
+            await ctx.send("Please provide a Sheets URL or a valid bound sheet name.\nFor example, `-bind https://docs.google.com/spreadsheets/d/1rTNdrubipOOdWL0LbADo2mPcruaZ_l0VZi2jdvYanJw/edit#gid=0 Fun Trivia`\nCreate a quiz spreadsheet by running `-template` and following the instructions")
+
         locale = ctx.guild.id if ctx.guild else ctx.author.id
 
         if not collection("bindings").find_one(
@@ -138,11 +141,14 @@ class Quiz(commands.Cog):
                 f"A sheet with name `{name}` already exists in this locale! Try another one.")
 
     @commands.command()
-    async def unbind(self, ctx: commands.Context, *, name: str):
+    async def unbind(self, ctx: commands.Context, *, name: str = None):
         '''
         Unbinds the spreadsheet with the specified name, if you own it.
-        e.g. `-unbind funtrivia` 
+        e.g. `-unbind Fun Trivia` 
         '''
+        if not name:
+            await ctx.send("Please provide the name a of a bound sheet you own. e.g. `-unbind Fun Trivia`")
+
         locale = ctx.guild.id if ctx.guild else ctx.author.id
 
         if document := collection("bindings").find_one(
