@@ -19,7 +19,6 @@ class Settings(commands.Cog):
         self.bot: commands.Bot = bot
 
     @commands.command()
-    @commands.check(commands.has_guild_permissions(administrator=True))
     async def prefix(self, ctx: commands.Context, prefix: str = None):
         '''
         Sets the prefix for the bot in the server, or sets it if no prefix is provided
@@ -34,6 +33,8 @@ class Settings(commands.Cog):
                 # Checks to make sure that the user has admins privs on the server
                 await ctx.send("Sorry, you need to have the **Administrator** permission to change the prefix.")
                 return
+            except commands.NoPrivateMessage:
+                pass
 
             if settings := collection("settings").find_one(locale(ctx)):
                 collection("settings").update_one(
