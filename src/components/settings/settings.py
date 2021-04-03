@@ -28,6 +28,13 @@ class Settings(commands.Cog):
             await ctx.send(f"Current Prefix is: `{(await self.bot.get_prefix(ctx.message))[-1]}`")
 
         else:
+            try:
+                admin = await commands.has_guild_permissions(administrator=True).predicate(ctx)
+            except commands.errors.MissingPermissions:
+                # Checks to make sure that the user has admins privs on the server
+                await ctx.send("Sorry, you need to have the **Administrator** permission to change the prefix.")
+                return
+
             if settings := collection("settings").find_one(locale(ctx)):
                 collection("settings").update_one(
                     {"_id": locale(ctx)}, {"$set": {"prefix": prefix}})
@@ -39,7 +46,7 @@ class Settings(commands.Cog):
             await ctx.message.add_reaction("👍")
 
     @commands.command()
-    @commands.check(commands.has_guild_permissions(administrator=True))
+    @commands.has_guild_permissions(administrator=True)
     async def allowuserbind(self, ctx: commands.Context, allow: bool = True):
         '''
         allows users to bind or not bind sheets to the server
