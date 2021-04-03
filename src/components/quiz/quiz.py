@@ -112,6 +112,10 @@ class Quiz(commands.Cog):
 
         locale = ctx.guild.id if ctx.guild else ctx.author.id
 
+        if ctx.guild and not await commands.has_guild_permissions(administrator=True).predicate(ctx):
+            # Checks to make sure that the user has admins privs on the server
+            await ctx.send("Sorry, you need to have the **Administrator** permission to bind sheets in this server.")
+
         if not collection("bindings").find_one(
                 {"locale": locale, "name": name}):
             # Validate URL
@@ -190,6 +194,13 @@ class Quiz(commands.Cog):
             e.add_field(name=document["name"], value=f"[Link to Sheet]({document['URL']})")
 
         await ctx.send(embed=e)
+
+    @commands.command()
+    async def explore(self, ctx: commands.Context):
+        '''
+        Lists premade sheets for you to use in your quizzes!
+        '''
+        await ctx.send("Here are the Studybot official curated sheets, ready for you to use in the `-quiz` command!\nhttp://bit.ly/studybotofficial")
 
 
 async def listen_quiz(ctx: commands.Context, questions):
