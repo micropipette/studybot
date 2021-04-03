@@ -27,15 +27,15 @@ class Quiz(commands.Cog):
         self.gc = gspread.service_account(filename="temp.json")
         os.remove("temp.json")
 
-    @commands.command()
+    @commands.command(hidden=True)
     async def testsheet(self, ctx: commands.Context, url: str):
         '''
-        Pulls raw data from spreadsheet for debugging
+        Pulls raw data from spreadsheet for debugging your sheet
         '''
         wks = self.gc.open_by_url(url).get_worksheet(0)
         await ctx.send(wks.get_all_values())
 
-    @commands.command()
+    @commands.command(enabled=False)
     @commands.max_concurrency(30)
     async def IB(self, ctx: commands.Context, url: str = "https://www.ibdocuments.com/IB%20QUESTIONBANKS/4.%20Fourth%20Edition/questionbank.ibo.org/en/teachers/00000/questionbanks/46-dp-physics/questions/105764.html"):
         '''
