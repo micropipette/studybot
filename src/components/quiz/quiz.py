@@ -7,7 +7,7 @@ import asyncio
 import random
 from urllib.parse import urlparse
 
-from utils.utilities import textToEmoji, emojiToText
+from utils.utilities import textToEmoji, emojiToText, locale
 from db import collection
 from .ib_qb_scraper import IB
 
@@ -110,19 +110,18 @@ class Quiz(commands.Cog):
             await ctx.send("Please provide a Sheets URL or a valid bound sheet name.\nFor example, `-bind https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0 Fun Trivia`\n\nCreate a quiz spreadsheet by running `-template` and following the instructions")
             return
 
-        locale = ctx.guild.id if ctx.guild else ctx.author.id
-
         try:
             admin = await commands.has_guild_permissions(administrator=True).predicate(ctx)
         except commands.errors.MissingPermissions:
             # Checks to make sure that the user has admins privs on the server
-            await ctx.send("Sorry, you need to have the **Administrator** permission to bind sheets in this server.")
-            return
+            if (settings := collection("settings").find_one({"locale": locale(ctx)})) and settings["admin-bind"]:
+                await ctx.send("Sorry, you need to have the **Administrator** permission to bind sheets in this server.")
+                return
         except commands.errors.NoPrivateMessage:
             pass
 
         if not collection("bindings").find_one(
-                {"locale": locale, "name": name}):
+                {"locale": locale(ctx), "name": name}):
             # Validate URL
             try:
                 result = urlparse(url)
@@ -132,7 +131,7 @@ class Quiz(commands.Cog):
                 return
 
             collection("bindings").insert_one(
-                {"locale": locale,
+                {"locale": locale(ctx),
                  "name": name,
                  "URL": url,
                  "user": ctx.author.id})
@@ -160,13 +159,11 @@ class Quiz(commands.Cog):
             await ctx.send("Please provide the name a of a bound sheet you own. e.g. `-unbind Fun Trivia`")
             return
 
-        locale = ctx.guild.id if ctx.guild else ctx.author.id
-
         if document := collection("bindings").find_one(
-                {"locale": locale, "name": name}):
+                {"locale": locale(ctx), "name": name}):
 
             if document["user"] == ctx.author.id:
-                collection("bindings").delete_one({"locale": locale, "name": name})
+                collection("bindings").delete_one({"locale": locale(ctx), "name": name})
                 await ctx.message.add_reaction("👍")
 
                 if ctx.guild:
@@ -188,14 +185,13 @@ class Quiz(commands.Cog):
         Lists all bound sheets on the server.
         To bind a sheet, use the `-bind` command.
         '''
-        locale = ctx.guild.id if ctx.guild else ctx.author.id
 
         if ctx.guild:
             e = discord.Embed(title=f"All bound sheets in {ctx.guild.name}")
         else:
             e = discord.Embed(title=f"All bound sheets in this DM")
 
-        for document in collection("bindings").find({"locale": locale}):
+        for document in collection("bindings").find({"locale": locale(ctx)}):
             e.add_field(name=document["name"], value=f"[Link to Sheet]({document['URL']})")
 
         await ctx.send(embed=e)

@@ -1,22 +1,28 @@
 import discord
 from discord.ext import commands
 from config import cfg
-from pretty_help import PrettyHelp
 from utils.logger import logger
+from db import collection
+from utils.utilities import locale
+
 
 # Map prefixes
-if cfg["Settings"]["secondary-prefix"]:
-    prefixes = commands.when_mentioned_or(
-        cfg["Settings"]["prefix"].strip("\""),
-        cfg["Settings"]["secondary-prefix"].strip("\""))
-else:
-    prefixes = commands.when_mentioned_or(
-        cfg["Settings"]["prefix"].strip("\""))
+async def bot_prefix(bot: commands.Bot, message: discord.Message):
+    '''
+    Returns bot prefix for a specific locale
+    '''
+    ctx = await bot.get_context(message)
+
+    if settings := collection("settings").find_one({"locale": locale(ctx)}):
+        return commands.when_mentioned_or(settings["prefix"])
+    else:
+        return commands.when_mentioned_or(
+            cfg["Settings"]["prefix"].strip("\""))
 
 intents = discord.Intents.default()
 
 client = commands.Bot(
-    command_prefix=prefixes,
+    command_prefix=bot_prefix,
     case_insensitive=True,
     help_command=commands.MinimalHelpCommand(),
     intents=intents,
@@ -43,10 +49,4 @@ async def on_command_error(ctx: commands.Context, exception):
         await ctx.send(exception)
     else:
         logger.exception("Command Error", exc_info=exception)
-        await ctx.send(f"An unexpected error occurred. If this problem persists, please let `itchono#3597` know!```{exception}```")
-
-    # with open("studybot.log", "rb") as f:
-    #     await ctx.send(
-    #         f"Error: {exception}\n\n**Attached is a log of what went wrong. Please send this to `itchono#3597`**",
-    #         reference=ctx.message,
-    #         file=discord.File(f, filename="studybot_log.txt"))
+        await ctx.send(f"An unexpected error occurred. If this problem persists, please let us know in the **Studyboy Official Server!**```{exception}```")

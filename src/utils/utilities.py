@@ -109,3 +109,10 @@ def emojiToText(s) -> str:
             newS += s[i]
         i += 1
     return newS
+
+
+def locale(ctx):
+    '''
+    Gets guild ID or author id -- for use in DB accessing
+    '''
+    return ctx.guild.id if ctx.guild else ctx.author.id
