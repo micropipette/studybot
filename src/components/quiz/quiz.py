@@ -273,7 +273,14 @@ async def listen_quiz(ctx: commands.Context, questions):
             if mcq:
                 correct_reaction = message.reactions[correct_index]
 
-                if ctx.author in (await correct_reaction.users().flatten()):
+                correct = False
+
+                async for user in correct_reaction.users():
+                    if user.id == ctx.author.id:
+                        correct = True
+                        break
+
+                if correct:
                     e = discord.Embed(
                         colour=discord.Color.green(), title="Correct",
                         description=str(correct_reaction) + " " + options[correct_index])
@@ -297,7 +304,15 @@ async def listen_quiz(ctx: commands.Context, questions):
             # Refresh quiz to see if anyone has responded even before the listener is ready
             listen = True
             for reaction in message.reactions:
-                if reaction.count > 1 and ctx.author in (await reaction.users().flatten()):
+
+                reacted = False
+
+                async for user in reaction.users():
+                    if user.id == ctx.author.id:
+                        reacted = True
+                        break
+
+                if reaction.count > 1 and reacted:
                     listen = False
                     await send_result(reaction.emoji)
 
