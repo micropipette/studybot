@@ -13,15 +13,14 @@ async def bot_prefix(bot: commands.Bot, message: discord.Message):
     locale = message.guild.id if message.guild else message.author.id
 
     if settings := collection("settings").find_one({"locale": locale}):
-        return commands.when_mentioned_or(settings["prefix"])
+        return settings["prefix"]
     else:
-        return commands.when_mentioned_or(
-            cfg["Settings"]["prefix"].strip("\""))
+        return cfg["Settings"]["prefix"].strip("\"")
 
 intents = discord.Intents.default()
 
 client = commands.Bot(
-    command_prefix=bot_prefix,
+    command_prefix=commands.when_mentioned_or(bot_prefix),
     case_insensitive=True,
     help_command=commands.MinimalHelpCommand(),
     intents=intents,
