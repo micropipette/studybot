@@ -40,7 +40,7 @@ class Settings(commands.Cog):
         await ctx.add_reaction("👍")
 
     @commands.command()
-    @commands.check(commands.has_guild_permissions(adminstrator=True))
+    @commands.check(commands.has_guild_permissions(administrator=True))
     async def allowuserbind(self, ctx: commands.Context, allow: bool = True):
         '''
         allows users to bind or not bind sheets to the server
