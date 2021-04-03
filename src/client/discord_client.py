@@ -43,7 +43,7 @@ async def on_command_error(ctx: commands.Context, exception):
         await ctx.send(exception)
     else:
         logger.exception("Command Error", exc_info=exception)
-        await ctx.send(f"An unexpected error occurred. If this problem persists, please let `itchono#3597` know! Details:\n{exception}")
+        await ctx.send(f"An unexpected error occurred. If this problem persists, please let `itchono#3597` know!```{exception}```")
 
     # with open("studybot.log", "rb") as f:
     #     await ctx.send(

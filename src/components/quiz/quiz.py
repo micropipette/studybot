@@ -118,6 +118,8 @@ class Quiz(commands.Cog):
             # Checks to make sure that the user has admins privs on the server
             await ctx.send("Sorry, you need to have the **Administrator** permission to bind sheets in this server.")
             return
+        except commands.errors.NoPrivateMessage:
+            pass
 
         if not collection("bindings").find_one(
                 {"locale": locale, "name": name}):
