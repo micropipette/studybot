@@ -20,11 +20,13 @@ If you are contributing, and would like to add a new library to the code, please
 * Practice your questions from the comfort of Discord
 * Several different question types, ranging from multiple choice, flashcards, (coming soon) long answer & multi-part questions
 
+![Demo-Gif](https://cdn.discordapp.com/attachments/804388848510435370/827988611962109952/ezgif-2-d9890b0acbb5.gif)
 
 # Timeline
-2021 January 27: Start
+2021 January: Start
 
-2021 February 15: Basic implementation of quiz functionality through Google Sheets API for question storage
+2021 February: Basic implementation of quiz functionality through Google Sheets API for question storage
 
-2021 March 16: Added support for images, performance improvements
+2021 March: Added support for images, performance improvements
 
+2021 April: Bot is listed on top.gg, first public release
