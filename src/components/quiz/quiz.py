@@ -94,9 +94,9 @@ class Quiz(commands.Cog):
         Make a copy of this spreadsheet, and fill with your own questions!
         '''
         await ctx.send('''Template spreadsheet:
-        https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0/edit?usp=sharing
+        https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0/copy
 
-        **Make a copy of this spreadsheet, and edit with your own questions!
+        **Make a copy of this spreadsheet, and add your own questions!
           Don't forget to set the sheet to `anyone with link can view`**
         ''')
 
