@@ -20,7 +20,11 @@ If you are contributing, and would like to add a new library to the code, please
 * Practice your questions from the comfort of Discord
 * Several different question types, ranging from multiple choice, flashcards, (coming soon) long answer & multi-part questions
 
+### Basic Usage
 ![Demo-Gif](https://cdn.discordapp.com/attachments/804388848510435370/827988611962109952/ezgif-2-d9890b0acbb5.gif)
+
+### Adding Your Own Questions
+![Demo-Gif-2](https://cdn.discordapp.com/attachments/804388848510435370/827998690886418463/ezgif-7-c601e2fb575f.gif)
 
 # Timeline
 2021 January: Start
