@@ -25,7 +25,7 @@ class Settings(commands.Cog):
         Sets the prefix for the bot in the server, or sets it if no prefix is provided
         '''
         if prefix is None:
-            await ctx.send(f"Current Prefix is: `{await self.bot.get_prefix(ctx.message)}`")
+            await ctx.send(f"Current Prefix is: `{await self.bot.get_prefix(ctx.message)[-1]}`")
 
         else:
             if settings := collection("settings").find_one(
@@ -37,7 +37,7 @@ class Settings(commands.Cog):
                 settings = default_settings(ctx)
                 settings["prefix"] = prefix
                 collection("settings").insert_one(settings)
-        await ctx.add_reaction("👍")
+            await ctx.message.add_reaction("👍")
 
     @commands.command()
     @commands.check(commands.has_guild_permissions(administrator=True))
