@@ -3,6 +3,7 @@ from discord.ext import commands
 from config import cfg
 from utils.logger import logger
 from db import collection
+from utils.utilities import locale
 
 
 # Map prefixes
@@ -13,14 +14,15 @@ async def bot_prefix(bot: commands.Bot, message: discord.Message):
     locale = message.guild.id if message.guild else message.author.id
 
     if settings := collection("settings").find_one({"locale": locale}):
-        return settings["prefix"]
+        return commands.when_mentioned_or(settings["prefix"])(bot, message)
     else:
-        return cfg["Settings"]["prefix"].strip("\"")
+        return commands.when_mentioned_or(
+            cfg["Settings"]["prefix"].strip("\""))(bot, message)
 
 intents = discord.Intents.default()
 
 client = commands.Bot(
-    command_prefix=commands.when_mentioned_or(bot_prefix),
+    command_prefix=bot_prefix,
     case_insensitive=True,
     help_command=commands.MinimalHelpCommand(),
     intents=intents,
