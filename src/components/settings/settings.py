@@ -28,10 +28,9 @@ class Settings(commands.Cog):
             await ctx.send(f"Current Prefix is: `{(await self.bot.get_prefix(ctx.message))[-1]}`")
 
         else:
-            if settings := collection("settings").find_one(
-                    {"locale": locale(ctx)}):
+            if settings := collection("settings").find_one(locale(ctx)):
                 collection("settings").update_one(
-                    {"locale": locale(ctx)}, {"$set": {"prefix": prefix}})
+                    {"_id": locale(ctx)}, {"$set": {"prefix": prefix}})
             else:
                 # Need a new setings doc
                 settings = default_settings(ctx)
@@ -45,10 +44,9 @@ class Settings(commands.Cog):
         '''
         allows users to bind or not bind sheets to the server
         '''
-        if settings := collection("settings").find_one(
-                {"locale": locale(ctx)}):
+        if settings := collection("settings").find_one(locale(ctx)):
             collection("settings").update_one(
-                {"locale": locale(ctx)}, {"$set": {"admin-bind": not allow}})
+                {"_id": locale(ctx)}, {"$set": {"admin-bind": not allow}})
         else:
             # Need a new setings doc
             settings = default_settings(ctx)

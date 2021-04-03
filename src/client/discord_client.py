@@ -12,8 +12,7 @@ async def bot_prefix(bot: commands.Bot, message: discord.Message):
     '''
     locale = message.guild.id if message.guild else message.author.id
 
-    if settings := collection("settings").find_one({"locale": locale}):
-        print(settings["prefix"])
+    if settings := collection("settings").find_one(locale):
         return commands.when_mentioned_or(settings["prefix"])(bot, message)
     else:
         return commands.when_mentioned_or(
