@@ -114,7 +114,7 @@ class Quiz(commands.Cog):
             admin = await commands.has_guild_permissions(administrator=True).predicate(ctx)
         except commands.errors.MissingPermissions:
             # Checks to make sure that the user has admins privs on the server
-            if (settings := collection("settings").find_one(locale(ctx))) and settings["admin-bind"]:
+            if ((settings := collection("settings").find_one(locale(ctx))) and settings["admin-bind"]) or not collection("settings").find_one(locale(ctx)):
                 await ctx.send("Sorry, you need to have the **Administrator** permission to bind sheets in this server.")
                 return
         except commands.errors.NoPrivateMessage:
