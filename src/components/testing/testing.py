@@ -15,6 +15,7 @@ class Testing(commands.Cog):
         self.bot: commands.Bot = bot
 
     @commands.command(hidden=True)
+    @commands.is_owner()
     async def status(self, ctx: commands.Context):
         '''
         Shows the current status of the bot on the remote host.
