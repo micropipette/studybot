@@ -3,7 +3,6 @@ from discord.ext import commands
 from config import cfg
 from utils.logger import logger
 from db import collection
-from utils.utilities import locale
 
 
 # Map prefixes
@@ -14,6 +13,7 @@ async def bot_prefix(bot: commands.Bot, message: discord.Message):
     locale = message.guild.id if message.guild else message.author.id
 
     if settings := collection("settings").find_one({"locale": locale}):
+        print(settings["prefix"])
         return commands.when_mentioned_or(settings["prefix"])(bot, message)
     else:
         return commands.when_mentioned_or(
