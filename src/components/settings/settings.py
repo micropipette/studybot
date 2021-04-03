@@ -19,7 +19,7 @@ class Settings(commands.Cog):
         self.bot: commands.Bot = bot
 
     @commands.command()
-    @commands.check(commands.has_guild_permissions(adminstrator=True))
+    @commands.check(commands.has_guild_permissions(administrator=True))
     async def prefix(self, ctx: commands.Context, prefix: str = None):
         '''
         Sets the prefix for the bot in the server, or sets it if no prefix is provided
