@@ -22,7 +22,7 @@ app = Flask('')
 @app.route('/')
 def main():
 
-    with open("bot.log", "r", encoding="utf-8") as f:
+    with open("studybot.log", "r", encoding="utf-8") as f:
         content = f.read().splitlines()
 
     uptime = datetime.timedelta(seconds=round(get_uptime()))
