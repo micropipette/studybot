@@ -36,9 +36,9 @@ def main():
 
 @app.route('/log')
 def downloadFile():
-    path = "bot.log"
+    path = "studybot.log"
     return send_file(path, as_attachment=True,
-                     attachment_filename='comrade_log.txt')
+                     attachment_filename='bot_log.txt')
 
 
 def run():

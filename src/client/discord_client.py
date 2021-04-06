@@ -3,7 +3,7 @@ from discord.ext import commands
 from config import cfg
 from utils.logger import logger
 from db import collection
-
+import os
 
 # Map prefixes
 async def bot_prefix(bot: commands.Bot, message: discord.Message):
@@ -34,6 +34,9 @@ help.hidden = True
 
 @client.event
 async def on_error(event, *args, **kwargs):
+    if type(event) == discord.HTTPException:
+        os.system("kill 1")  # hard restart on 429
+
     try:
         raise event
     except Exception:
