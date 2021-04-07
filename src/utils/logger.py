@@ -1,7 +1,10 @@
 import logging
+from utils.utilities import local_time
+
+logging.Formatter.converter = lambda *args: local_time().timetuple()
 
 
-logger = logging.getLogger("ComradeLog")
+logger = logging.getLogger("SBLog")
 logger.setLevel(logging.INFO)
 
 # Configure loggers
