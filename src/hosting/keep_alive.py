@@ -32,7 +32,7 @@ def main():
                            user=str(bot.user),
                            loglines=content,
                            version=version,
-                           timezone=cfg["timezone"])
+                           timezone=cfg["Settings"]["timezone"])
 
 
 @app.route('/log')
