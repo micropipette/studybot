@@ -36,7 +36,7 @@ class Quiz(commands.Cog):
         await ctx.send(wks.get_all_values())
 
     @commands.command(enabled=False)
-    @commands.max_concurrency(30)
+    @commands.max_concurrency(100)
     async def IB(self, ctx: commands.Context, url: str = "https://www.ibdocuments.com/IB%20QUESTIONBANKS/4.%20Fourth%20Edition/questionbank.ibo.org/en/teachers/00000/questionbanks/46-dp-physics/questions/105764.html"):
         '''
         Displays a MCQ from the IB questionbank.
@@ -53,7 +53,7 @@ class Quiz(commands.Cog):
             await ctx.send("Could not scrape the URL provided.")
 
     @commands.command()
-    @commands.max_concurrency(30)
+    @commands.max_concurrency(100)
     async def quiz(self, ctx: commands.Context, *, sheet: str = None):
         '''
         Begins a singleplayer quiz, given a Studybot-compatible spreadsheet.
@@ -293,10 +293,12 @@ async def listen_quiz(ctx: commands.Context, questions):
                 e = discord.Embed(
                     colour=discord.Color.blue())
 
-                if len(options[0]) < 256:
+                if options and len(options[0]) < 256:
                     e.title = options[0]
-                else:
+                elif options:
                     e.description = options[0]
+                else:
+                    e.title = "(No Answer Found)"
 
             await ctx.send(embed=e)
 
