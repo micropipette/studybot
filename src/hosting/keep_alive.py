@@ -10,7 +10,7 @@ from utils.utilities import get_uptime
 from utils.logger import logger
 from client import client as bot
 import datetime
-from config import version
+from config import version, cfg
 
 # disable flask dumb logging
 logging.getLogger('werkzeug').disabled = True
@@ -31,7 +31,8 @@ def main():
                            numservers=len(bot.guilds),
                            user=str(bot.user),
                            loglines=content,
-                           version=version)
+                           version=version,
+                           timezone=cfg["Settings"]["timezone"])
 
 
 @app.route('/log')

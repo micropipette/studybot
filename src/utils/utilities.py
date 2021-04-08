@@ -1,5 +1,7 @@
 from config import cfg
 import time
+import datetime
+import pytz
 
 bot_prefix = cfg["Settings"]["prefix"].strip("\"")
 startup_time = None
@@ -12,6 +14,21 @@ def set_start_time(time):
     '''
     global startup_time
     startup_time = time
+
+def local_time() -> datetime.datetime:
+    '''
+    Returns local time.
+    '''
+    utc = pytz.timezone("UTC").localize(datetime.datetime.utcnow())
+    return utc.astimezone(pytz.timezone(cfg["Settings"]["timezone"]))
+
+
+def utc_to_local_time(t) -> datetime.datetime:
+    '''
+    Converts UTC to local time
+    '''
+    utc = pytz.timezone("UTC").localize(t)
+    return utc.astimezone(pytz.timezone(cfg["Settings"]["timezone"]))
 
 
 def get_uptime() -> float:

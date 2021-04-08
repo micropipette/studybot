@@ -1,4 +1,4 @@
-from .testing import Testing, Music
+from .testing import Testing
 from .quiz import Quiz
 from .settings import Settings
 

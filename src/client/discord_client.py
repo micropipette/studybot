@@ -5,6 +5,7 @@ from utils.logger import logger
 from db import collection
 import os
 
+
 # Map prefixes
 async def bot_prefix(bot: commands.Bot, message: discord.Message):
     '''
@@ -18,7 +19,7 @@ async def bot_prefix(bot: commands.Bot, message: discord.Message):
         return commands.when_mentioned_or(
             cfg["Settings"]["prefix"].strip("\""))(bot, message)
 
-intents = discord.Intents.default()
+intents = discord.Intents(guilds=True, messages=True, reactions=True)
 
 client = commands.Bot(
     command_prefix=bot_prefix,
