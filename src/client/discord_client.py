@@ -49,7 +49,20 @@ async def on_command_error(ctx: commands.Context, exception):
     # When a command fails to execute
 
     if type(exception) == commands.CommandNotFound:
-        await ctx.send(exception)
+        try:
+            await ctx.send(exception)
+        except discord.Forbidden:
+            pass
     else:
         logger.exception("Command Error", exc_info=exception)
-        await ctx.send(f"An unexpected error occurred. If this problem persists, please let us know in the **Studyboy Official Server!**```{exception}```")
+        try:
+            await ctx.send(f"An unexpected error occurred. If this problem persists, please let us know in the **Studyboy Official Server!**```{exception}```")
+        except discord.Forbidden:
+            pass
+
+
+@client.event
+async def on_guild_remove(guild: discord.Guild):
+    # When bot is removed from a guild
+    collection("settings").delete_one({"_id": guild.id})
+    collection("bindings").delete_many({"locale": guild.id})
