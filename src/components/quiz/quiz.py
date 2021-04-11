@@ -5,6 +5,7 @@ import gspread
 import os
 import asyncio
 import random
+import re
 from urllib.parse import urlparse
 
 from utils.utilities import textToEmoji, emojiToText, locale
@@ -12,6 +13,10 @@ from db import collection
 from .ib_qb_scraper import IB
 
 REACTIONS = "abcdefghijklmnopqrstuvwxyz"
+
+
+def sheet_name(sheet: str) -> str:
+    return re.compile('^' + re.escape(sheet) + "$", re.IGNORECASE)
 
 
 class Quiz(commands.Cog):
@@ -64,7 +69,7 @@ class Quiz(commands.Cog):
             await ctx.send("Please provide a Sheets URL or a valid bound sheet name.\nFor example, `-quiz https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0`\n\nCreate a quiz spreadsheet by running `-template` and following the instructions")
             return
 
-        if document := collection("bindings").find_one({"name": sheet}):
+        if document := collection("bindings").find_one({"name": sheet_name(sheet), "locale": locale(ctx)}):
             url = document["URL"]
         else:
             url = sheet
@@ -121,7 +126,7 @@ class Quiz(commands.Cog):
             pass
 
         if not collection("bindings").find_one(
-                {"locale": locale(ctx), "name": name}):
+                {"locale": locale(ctx), "name": sheet_name(name)}):
             # Validate URL
             try:
                 result = urlparse(url)
@@ -160,10 +165,10 @@ class Quiz(commands.Cog):
             return
 
         if document := collection("bindings").find_one(
-                {"locale": locale(ctx), "name": name}):
+                {"locale": locale(ctx), "name": sheet_name(name)}):
 
             if document["user"] == ctx.author.id:
-                collection("bindings").delete_one({"locale": locale(ctx), "name": name})
+                collection("bindings").delete_one({"locale": locale(ctx), "name": sheet_name(name)})
                 await ctx.message.add_reaction("👍")
 
                 if ctx.guild:
@@ -207,6 +212,9 @@ class Quiz(commands.Cog):
 async def listen_quiz(ctx: commands.Context, questions):
     cont = True
 
+    ctx.current_score = 0
+    ctx.current_mcq = 0
+
     while cont and questions:
         # Verify list is not empty
 
@@ -237,12 +245,15 @@ async def listen_quiz(ctx: commands.Context, questions):
         if current_question[-1]:
             # Multiple choice
             mcq = True
+            ctx.current_mcq += 1 # Add 1 to total MCQ
+
             correct_index = ord(current_question[-1][0].lower()) - 97
 
             for i in range(len(options)):
                 desc_text += f"{textToEmoji(REACTIONS[i])}: {options[i]}\n"
 
-            e.description = desc_text
+            e.description = desc_text  # Add the MCQ options to the description
+            # Description now has question text (maybe) + mcq questions
 
             e.set_author(
                 name="React with the correct answer",
@@ -271,6 +282,7 @@ async def listen_quiz(ctx: commands.Context, questions):
             Sends the result of a quiz given the user's response
             '''
             if mcq:
+                # Determine whether MCQ answer is correct or not
                 correct_reaction = message.reactions[correct_index]
 
                 correct = False
@@ -281,6 +293,7 @@ async def listen_quiz(ctx: commands.Context, questions):
                         break
 
                 if correct:
+                    ctx.current_score += 1  # Add 1 to current score
                     e = discord.Embed(
                         colour=discord.Color.green(), title="Correct",
                         description=str(correct_reaction) + " " + options[correct_index])
@@ -288,8 +301,11 @@ async def listen_quiz(ctx: commands.Context, questions):
                     e = discord.Embed(
                         colour=discord.Color.red(), title="Incorrect",
                         description=str(correct_reaction) + " " + options[correct_index])
-                e.set_footer(text=f"You Answered: {emojiToText(str(emoji)).upper()}")
+
+                e.set_footer(text=f"You Answered: {emojiToText(str(emoji)).upper()}\nCurrent Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%")
+
             else:
+                # Show flashcard answer
                 e = discord.Embed(
                     colour=discord.Color.blue())
 
@@ -301,21 +317,20 @@ async def listen_quiz(ctx: commands.Context, questions):
             await ctx.send(embed=e)
 
         try:
-            # Refresh quiz to see if anyone has responded even before the listener is ready
+            # Refresh quiz to see if anyone has responded even before emojis are done being added
             listen = True
             for reaction in message.reactions:
-
-                reacted = False
-
+                # Scan all reactions
                 async for user in reaction.users():
+                    # Scan all users in reaction
+                    print(reaction, user)
                     if user.id == ctx.author.id:
-                        reacted = True
+                        listen = False
+                        # Pick first emoji which has author's reaction, proceed
+                        await send_result(reaction.emoji)
                         break
 
-                if reaction.count > 1 and reacted:
-                    listen = False
-                    await send_result(reaction.emoji)
-
+            # Otherwise, start listening for emoji reactions
             if listen:
                 payload = await ctx.bot.wait_for(
                     "raw_reaction_add", timeout=120, check=check)
@@ -329,8 +344,10 @@ async def listen_quiz(ctx: commands.Context, questions):
 
         except asyncio.TimeoutError:
             cont = False
+            await msg.edit(content="**Quiz timed out after 120 seconds of inactivity.**")
+            return
 
     if not questions:
         await ctx.send(
             "Question deck has been exhausted. Enter a new link to start again!")
-
+        return
