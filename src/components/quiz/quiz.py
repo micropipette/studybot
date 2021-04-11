@@ -245,7 +245,6 @@ async def listen_quiz(ctx: commands.Context, questions):
         if current_question[-1]:
             # Multiple choice
             mcq = True
-            ctx.current_mcq += 1 # Add 1 to total MCQ
 
             correct_index = ord(current_question[-1][0].lower()) - 97
 
@@ -292,6 +291,7 @@ async def listen_quiz(ctx: commands.Context, questions):
                         correct = True
                         break
 
+                ctx.current_mcq += 1  # Add 1 to total MCQ
                 if correct:
                     ctx.current_score += 1  # Add 1 to current score
                     e = discord.Embed(
@@ -335,8 +335,10 @@ async def listen_quiz(ctx: commands.Context, questions):
                     "raw_reaction_add", timeout=120, check=check)
 
                 if payload.emoji.name == "🛑":
+                    finalscore = f"Final Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%" if ctx.current_mcq else None
+
                     await ctx.send(
-                        "Quiz Terminated. Enter a new link to start again!")
+                        "Quiz Terminated. Enter a new link to start again!" + (("\n"+finalscore) if finalscore else ""))
                     return
 
                 await send_result(payload.emoji)
@@ -347,6 +349,7 @@ async def listen_quiz(ctx: commands.Context, questions):
             return
 
     if not questions:
+        finalscore = f"Final Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%" if ctx.current_mcq else None
         await ctx.send(
-            "Question deck has been exhausted. Enter a new link to start again!")
+            "Question deck has been exhausted. Enter a new link to start again!" + (("\n"+finalscore) if finalscore else ""))
         return
