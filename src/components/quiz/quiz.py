@@ -323,7 +323,6 @@ async def listen_quiz(ctx: commands.Context, questions):
                 # Scan all reactions
                 async for user in reaction.users():
                     # Scan all users in reaction
-                    print(reaction, user)
                     if user.id == ctx.author.id:
                         listen = False
                         # Pick first emoji which has author's reaction, proceed
@@ -338,7 +337,7 @@ async def listen_quiz(ctx: commands.Context, questions):
                 if payload.emoji.name == "🛑":
                     await ctx.send(
                         "Quiz Terminated. Enter a new link to start again!")
-                    raise asyncio.TimeoutError
+                    return
 
                 await send_result(payload.emoji)
 
