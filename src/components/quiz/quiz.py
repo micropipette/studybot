@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 
 from utils.utilities import textToEmoji, emojiToText, locale
 from db import collection
-from .ib_qb_scraper import IB
+from .utils import IB
 
 REACTIONS = "abcdefghijklmnopqrstuvwxyz"
 
@@ -313,10 +313,12 @@ async def listen_quiz(ctx: commands.Context, questions):
                 e = discord.Embed(
                     colour=discord.Color.blue())
 
-                if options and len(options[0]) < 256:
-                    e.title = options[0]
+                answers = "\n".join(options)
+
+                if options and len(answers) < 256:
+                    e.title = answers
                 elif options:
-                    e.description = options[0]
+                    e.description = answers
                 else:
                     e.title = "(No Answer Found)"
 

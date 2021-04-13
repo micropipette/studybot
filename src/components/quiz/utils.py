@@ -7,15 +7,6 @@ from urllib.parse import urljoin
 session = aiohttp.ClientSession()
 
 
-def webscrape_header() -> dict:
-    '''
-    Returns user agent and header, useful for web scraping
-    '''
-    user_agent = ('Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.7)'
-                  ' Gecko/2009021910 Firefox/3.0.7')
-    return {'User-Agent': user_agent, }
-
-
 async def IB(url):
     # LOAD NEW EMOJI
     async with session.get(url) as resp:
@@ -51,9 +42,9 @@ async def IB(url):
         print(f"Question Type is: {question_type}, which is not supported right now.")
         return question_type
 
-async def scrape(url):
+async def obtain(url):
     '''
-    Scrapes all questions off a core questions page
+    Obtains all questions off a core questions page
     '''
     async with session.get(url) as resp:
         data = await resp.read()
@@ -70,4 +61,4 @@ if __name__ == "__main__":
     qs = "https://www.ibdocuments.com/IB%20QUESTIONBANKS/4.%20Fourth%20Edition/questionbank.ibo.org/en/teachers/00000/questionbanks/46-dp-physics/syllabus_sections/2595.html"
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(scrape(qs))
+    loop.run_until_complete(obtain(qs))
