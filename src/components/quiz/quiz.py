@@ -220,6 +220,10 @@ async def listen_quiz(ctx: commands.Context, questions):
 
         current_question = questions.pop(0)
         prompt = current_question[0]
+
+        if not prompt:
+            continue
+
         image_url = current_question[1]
         mcq = False
 
