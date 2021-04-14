@@ -280,23 +280,16 @@ async def listen_quiz(ctx: commands.Context, questions):
 
         message = await msg.channel.fetch_message(msg.id)
 
-        async def send_result(emoji):
+        async def send_result(emoji: discord.Emoji):
             '''
             Sends the result of a quiz given the user's response
             '''
             if mcq:
                 # Determine whether MCQ answer is correct or not
-                correct_reaction = message.reactions[correct_index]
-
-                correct = False
-
-                async for user in correct_reaction.users():
-                    if user.id == ctx.author.id:
-                        correct = True
-                        break
+                correct_reaction: discord.Reaction = message.reactions[correct_index]
 
                 ctx.current_mcq += 1  # Add 1 to total MCQ
-                if correct:
+                if str(correct_reaction.emoji) == str(emoji):
                     ctx.current_score += 1  # Add 1 to current score
                     e = discord.Embed(
                         colour=discord.Color.green(), title="Correct",
@@ -339,7 +332,7 @@ async def listen_quiz(ctx: commands.Context, questions):
 
             # Otherwise, start listening for emoji reactions
             if listen:
-                payload = await ctx.bot.wait_for(
+                payload: discord.RawReactionActionEvent = await ctx.bot.wait_for(
                     "raw_reaction_add", timeout=120, check=check)
 
                 if payload.emoji.name == "🛑":
