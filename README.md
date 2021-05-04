@@ -34,3 +34,5 @@ If you are contributing, and would like to add a new library to the code, please
 2021 March: Added support for images, performance improvements
 
 2021 April: Bot is listed on top.gg, first public release
+
+2021 May: Bot is officially verified by Discord
