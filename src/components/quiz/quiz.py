@@ -210,10 +210,78 @@ class Quiz(commands.Cog):
         '''
         Lists premade sheets for you to use in your quizzes!
         '''
-        await ctx.send("Here are the Studybot official curated sheets, ready for you to use in the `-quiz` command!\nhttps://www.studybot.ca/explore.html")
+        await ctx.send(
+            "Here are the Studybot official curated sheets, ready for you to use in the `-quiz` command!\nhttps://www.studybot.ca/explore.html")
 
 
-async def listen_quiz(ctx: commands.Context, questions):
+# Helper coros
+async def sweep_reactions(
+        ctx: commands.Context,
+        message: discord.Message) -> \
+        discord.RawReactionActionEvent:
+    '''
+    Sweep all reactions on a message
+    '''
+    while 1:
+        reaction: discord.Reaction
+        for reaction in message.reactions:
+            # Scan all reactions
+            user: discord.User
+            async for user in reaction.users():
+                # Scan all users in reaction
+                if user.id == ctx.author.id:
+                    # Pick first emoji which has author's reaction
+                    return discord.RawReactionActionEvent(
+                        {"message_id": message.id,
+                            "channel_id": message.channel.id,
+                            "user_id": user.id}, reaction.emoji, None)
+    await asyncio.sleep(1)
+
+
+async def send_result(mcq: bool,
+                      ctx: commands.Context,
+                      message: discord.Message,
+                      emoji: discord.Emoji,
+                      options: list,
+                      correct_index: int) -> None:
+    '''
+    Sends the result of a quiz given the user's response
+    '''
+    if mcq:
+        # Determine whether MCQ answer is correct or not
+        correct_reaction: discord.Reaction = message.reactions[correct_index]
+
+        ctx.current_mcq += 1  # Add 1 to total MCQ
+        if str(correct_reaction.emoji) == str(emoji):
+            ctx.current_score += 1  # Add 1 to current score
+            e = discord.Embed(
+                colour=discord.Color.green(), title="Correct",
+                description=str(correct_reaction) + " " + options[correct_index])
+        else:
+            e = discord.Embed(
+                colour=discord.Color.red(), title="Incorrect",
+                description=str(correct_reaction) + " " + options[correct_index])
+
+        e.set_footer(text=f"You Answered: {emojiToText(str(emoji)).upper()}\nCurrent Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%")
+
+    else:
+        # Show flashcard answer
+        e = discord.Embed(
+            colour=discord.Color.blue())
+
+        answers = "\n".join(options)
+
+        if options and len(answers) < 256:
+            e.title = answers
+        elif options:
+            e.description = answers
+        else:
+            e.title = "(No Answer Found)"
+
+    await ctx.send(embed=e)
+
+
+async def listen_quiz(ctx: commands.Context, questions: list):
     cont = True
 
     ctx.current_score = 0
@@ -227,6 +295,7 @@ async def listen_quiz(ctx: commands.Context, questions):
 
         if not prompt:
             continue
+            # Move to next question since this one is empty
 
         image_url = current_question[1]
         mcq = False
@@ -270,7 +339,7 @@ async def listen_quiz(ctx: commands.Context, questions):
                 name="React with ✅ to see the answer",
                 icon_url=ctx.author.avatar_url)
 
-        msg = await ctx.send(embed=e)
+        msg = await ctx.send(embed=e)  # Message that bot sends
 
         if mcq:
             for i in range(len(options)):
@@ -279,79 +348,44 @@ async def listen_quiz(ctx: commands.Context, questions):
             await msg.add_reaction("✅")
         await msg.add_reaction("🛑")
 
+        # LISTEN for reactions
         def check(payload):
             return payload.message_id == msg.id and payload.user_id == ctx.author.id
 
         message = await msg.channel.fetch_message(msg.id)
 
-        async def send_result(emoji: discord.Emoji):
-            '''
-            Sends the result of a quiz given the user's response
-            '''
-            if mcq:
-                # Determine whether MCQ answer is correct or not
-                correct_reaction: discord.Reaction = message.reactions[correct_index]
-
-                ctx.current_mcq += 1  # Add 1 to total MCQ
-                if str(correct_reaction.emoji) == str(emoji):
-                    ctx.current_score += 1  # Add 1 to current score
-                    e = discord.Embed(
-                        colour=discord.Color.green(), title="Correct",
-                        description=str(correct_reaction) + " " + options[correct_index])
-                else:
-                    e = discord.Embed(
-                        colour=discord.Color.red(), title="Incorrect",
-                        description=str(correct_reaction) + " " + options[correct_index])
-
-                e.set_footer(text=f"You Answered: {emojiToText(str(emoji)).upper()}\nCurrent Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%")
-
-            else:
-                # Show flashcard answer
-                e = discord.Embed(
-                    colour=discord.Color.blue())
-
-                answers = "\n".join(options)
-
-                if options and len(answers) < 256:
-                    e.title = answers
-                elif options:
-                    e.description = answers
-                else:
-                    e.title = "(No Answer Found)"
-
-            await ctx.send(embed=e)
-
         try:
-            # Refresh quiz to see if anyone has responded even before emojis are done being added
-            # TODO: Make this run concurrently with the other check
-            listen = True
-            for reaction in message.reactions:
-                # Scan all reactions
-                async for user in reaction.users():
-                    # Scan all users in reaction
-                    if user.id == ctx.author.id:
-                        listen = False
-                        # Pick first emoji which has author's reaction, proceed
-                        await send_result(reaction.emoji)
-                        break
+            pending_tasks = [
+                ctx.bot.wait_for("raw_reaction_add", timeout=120, check=check),
+                sweep_reactions(ctx, message)
+            ]
 
-            # Otherwise, start listening for emoji reactions
-            if listen:
-                payload: discord.RawReactionActionEvent = await ctx.bot.wait_for(
-                    "raw_reaction_add", timeout=120, check=check)
+            # Process tasks
+            done_tasks, pending_tasks = await asyncio.wait(
+                pending_tasks, return_when=asyncio.FIRST_COMPLETED)
 
-                if payload.emoji.name == "🛑":
-                    finalscore = f"Final Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%" if ctx.current_mcq else None
+            for task in pending_tasks:
+                task.cancel()
 
-                    await ctx.send(
-                        "Quiz Terminated. Enter a new link to start again!" + (("\n"+finalscore) if finalscore else ""))
-                    return
+            for task in done_tasks:
+                payload: discord.RawReactionActionEvent = await task
+            # Extract payload from tasks
 
-                await send_result(payload.emoji)
+            if str(payload.emoji) == "🛑":
+                finalscore = f"Final Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%" if ctx.current_mcq else None
+
+                await ctx.send(
+                    "Quiz Terminated. Enter a new link to start again!" + (
+                        ("\n"+finalscore) if finalscore else ""))
+                return
+
+            await send_result(
+                mcq, ctx, message, payload.emoji, options, correct_index)
 
         except asyncio.TimeoutError:
             cont = False
-            await msg.edit(content="**Quiz timed out after 120 seconds of inactivity.**")
+            await msg.edit(
+                content="**Quiz timed out after 120 seconds of inactivity.**")
             return
 
     if not questions:
