@@ -227,6 +227,7 @@ async def listen_quiz(ctx: commands.Context, questions):
 
         if not prompt:
             continue
+            # Move to next question since this one is empty
 
         image_url = current_question[1]
         mcq = False
@@ -322,36 +323,52 @@ async def listen_quiz(ctx: commands.Context, questions):
             await ctx.send(embed=e)
 
         try:
-            # Refresh quiz to see if anyone has responded even before emojis are done being added
-            # TODO: Make this run concurrently with the other check
-            listen = True
-            for reaction in message.reactions:
-                # Scan all reactions
-                async for user in reaction.users():
-                    # Scan all users in reaction
-                    if user.id == ctx.author.id:
-                        listen = False
-                        # Pick first emoji which has author's reaction, proceed
-                        await send_result(reaction.emoji)
-                        break
 
-            # Otherwise, start listening for emoji reactions
-            if listen:
-                payload: discord.RawReactionActionEvent = await ctx.bot.wait_for(
-                    "raw_reaction_add", timeout=120, check=check)
+            async def sweep_reactions():
+                '''
+                Sweep all reactions on a message
+                '''
+                while 1:
+                    for reaction in message.reactions:
+                        # Scan all reactions
+                        async for user in reaction.users():
+                            # Scan all users in reaction
+                            if user.id == ctx.author.id:
+                                # Pick first emoji which has author's reaction
+                                return discord.RawReactionActionEvent(
+                                    None, reaction.emoji, None)
+                await asyncio.sleep(1)
 
-                if payload.emoji.name == "🛑":
-                    finalscore = f"Final Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%" if ctx.current_mcq else None
+            pending_tasks = [
+                ctx.bot.wait_for("raw_reaction_add", timeout=120, check=check),
+                sweep_reactions()
+            ]
 
-                    await ctx.send(
-                        "Quiz Terminated. Enter a new link to start again!" + (("\n"+finalscore) if finalscore else ""))
-                    return
+            # Process tasks
+            done_tasks, pending_tasks = await asyncio.wait(
+                pending_tasks, return_when=asyncio.FIRST_COMPLETED)
 
-                await send_result(payload.emoji)
+            for task in pending_tasks:
+                task.cancel()
+
+            for task in done_tasks:
+                payload: discord.RawReactionActionEvent = await task
+            # Extract payload from tasks
+
+            if payload.emoji.name == "🛑":
+                finalscore = f"Final Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%" if ctx.current_mcq else None
+
+                await ctx.send(
+                    "Quiz Terminated. Enter a new link to start again!" + (
+                        ("\n"+finalscore) if finalscore else ""))
+                return
+
+            await send_result(payload.emoji)
 
         except asyncio.TimeoutError:
             cont = False
-            await msg.edit(content="**Quiz timed out after 120 seconds of inactivity.**")
+            await msg.edit(
+                content="**Quiz timed out after 120 seconds of inactivity.**")
             return
 
     if not questions:
