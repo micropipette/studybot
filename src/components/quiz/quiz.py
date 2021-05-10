@@ -5,7 +5,6 @@ import gspread
 import os
 import asyncio
 import random
-import re
 from urllib.parse import urlparse
 
 from utils.utilities import textToEmoji, emojiToText, locale
@@ -16,7 +15,11 @@ REACTIONS = "abcdefghijklmnopqrstuvwxyz"
 
 
 def sheet_name(sheet: str) -> str:
-    return re.compile('^' + re.escape(sheet) + "$", re.IGNORECASE)
+    '''
+    Transforms a name into a cleaned name for storage
+    (At the moment, just makes it lowercase)
+    '''
+    return sheet.lower()
 
 
 class Quiz(commands.Cog):
@@ -69,7 +72,7 @@ class Quiz(commands.Cog):
             await ctx.send("Please provide a Sheets URL or a valid bound sheet name.\nFor example, `-quiz https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0`\n\nCreate a quiz spreadsheet by running `-template` and following the instructions")
             return
 
-        if document := collection("bindings").find_one({"name": sheet_name(sheet), "locale": locale(ctx)}):
+        if document := collection("bindings").find_one({"name_lower": sheet_name(sheet), "locale": locale(ctx)}):
             url = document["URL"]
         else:
             url = sheet
@@ -126,7 +129,7 @@ class Quiz(commands.Cog):
             pass
 
         if not collection("bindings").find_one(
-                {"locale": locale(ctx), "name": sheet_name(name)}):
+                {"locale": locale(ctx), "name_lower": sheet_name(name)}):
             # Validate URL
             try:
                 result = urlparse(url)
@@ -138,6 +141,7 @@ class Quiz(commands.Cog):
             collection("bindings").insert_one(
                 {"locale": locale(ctx),
                  "name": name,
+                 "name_lower": sheet_name(name),
                  "URL": url,
                  "user": ctx.author.id})
 
@@ -152,7 +156,7 @@ class Quiz(commands.Cog):
 
         else:
             await ctx.send(
-                f"A sheet with name `{name}` already exists in this locale! Try another one.")
+                f"A sheet with name `{name}` already exists in this locale (names are case insensitive)! Try another one.")
 
     @commands.command()
     async def unbind(self, ctx: commands.Context, *, name: str = None):
@@ -165,10 +169,10 @@ class Quiz(commands.Cog):
             return
 
         if document := collection("bindings").find_one(
-                {"locale": locale(ctx), "name": sheet_name(name)}):
+                {"locale": locale(ctx), "name_lower": sheet_name(name)}):
 
             if document["user"] == ctx.author.id:
-                collection("bindings").delete_one({"locale": locale(ctx), "name": sheet_name(name)})
+                collection("bindings").delete_one({"locale": locale(ctx), "name_lower": sheet_name(name)})
                 await ctx.message.add_reaction("👍")
 
                 if ctx.guild:
@@ -206,7 +210,7 @@ class Quiz(commands.Cog):
         '''
         Lists premade sheets for you to use in your quizzes!
         '''
-        await ctx.send("Here are the Studybot official curated sheets, ready for you to use in the `-quiz` command!\nhttp://bit.ly/studybotofficial")
+        await ctx.send("Here are the Studybot official curated sheets, ready for you to use in the `-quiz` command!\nhttps://www.studybot.ca/explore.html")
 
 
 async def listen_quiz(ctx: commands.Context, questions):
@@ -319,6 +323,7 @@ async def listen_quiz(ctx: commands.Context, questions):
 
         try:
             # Refresh quiz to see if anyone has responded even before emojis are done being added
+            # TODO: Make this run concurrently with the other check
             listen = True
             for reaction in message.reactions:
                 # Scan all reactions
