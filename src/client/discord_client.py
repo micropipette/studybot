@@ -56,7 +56,7 @@ async def on_command_error(ctx: commands.Context, exception):
     else:
         logger.exception("Command Error", exc_info=exception)
         try:
-            await ctx.send(f"An unexpected error occurred. If this problem persists, please let us know in the **Studyboy Official Server!**```{exception}```")
+            await ctx.send(f"An unexpected error occurred. If this problem persists, please let us know in the **Studybot Official Server!**```{exception}```")
         except discord.Forbidden:
             pass
 

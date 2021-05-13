@@ -82,7 +82,9 @@ class Quiz(commands.Cog):
         except gspread.NoValidUrlKeyFound:
             await ctx.send("Sheet not found. Check that your sheet is shared with **anyone with link**.")
             return
-
+        except gspread.exceptions.APIError:
+            await ctx.send("Sheet is not shared publicly. Check that your sheet is shared with **anyone with link**.")
+            return
 
         await ctx.send(f"Starting quiz for `{sheet.title}`...")
 
@@ -323,7 +325,7 @@ async def listen_quiz(ctx: commands.Context, questions: list):
             # Multiple choice
             mcq = True
 
-            correct_index = ord(current_question[-1][0].lower()) - 97
+            correct_index: int = ord(current_question[-1][0].lower()) - 97
 
             for i in range(len(options)):
                 desc_text += f"{textToEmoji(REACTIONS[i])}: {options[i]}\n"
@@ -335,6 +337,7 @@ async def listen_quiz(ctx: commands.Context, questions: list):
                 name="React with the correct answer",
                 icon_url=ctx.author.avatar_url)
         else:
+            correct_index: int = 0  # Give it a default value so as to not raise an error
             e.set_author(
                 name="React with ✅ to see the answer",
                 icon_url=ctx.author.avatar_url)
