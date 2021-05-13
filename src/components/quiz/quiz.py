@@ -79,14 +79,15 @@ class Quiz(commands.Cog):
 
         try:
             sheet: gspread.Spreadsheet = self.gc.open_by_url(url)
+            title = sheet.title
         except gspread.NoValidUrlKeyFound:
-            await ctx.send("Sheet not found. Check that your sheet is shared with **anyone with link**.")
+            await ctx.send("Sheet not found. Please check that your sheet exists and is shared with **anyone with link**.")
             return
         except gspread.exceptions.APIError:
-            await ctx.send("Sheet is not shared publicly. Check that your sheet is shared with **anyone with link**.")
+            await ctx.send("The sheet you linked is not shared publicly. Please check that your sheet is shared with **anyone with link**.")
             return
 
-        await ctx.send(f"Starting quiz for `{sheet.title}`...")
+        await ctx.send(f"Starting quiz for `{title}`...")
 
         wks = sheet.get_worksheet(0)
 
