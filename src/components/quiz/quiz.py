@@ -8,7 +8,7 @@ import random
 from urllib.parse import urlparse
 
 from utils.utilities import textToEmoji, emojiToText, locale
-from db import collection
+from db import collection, Airtable
 from .utils import IB
 
 REACTIONS = "abcdefghijklmnopqrstuvwxyz"
@@ -29,6 +29,7 @@ class Quiz(commands.Cog):
     '''
     def __init__(self, bot):
         self.bot: commands.Bot = bot
+        self.airtable: Airtable = Airtable()
 
         with open("temp.json", "w") as f:
             f.write(os.environ.get("SHEETS"))
@@ -73,8 +74,13 @@ class Quiz(commands.Cog):
             return
 
         if document := collection("bindings").find_one({"name_lower": sheet_name(sheet), "locale": locale(ctx)}):
+            # Search mongoDB
             url = document["URL"]
+        elif record := await self.airtable.find_sheet(sheet):
+            # Search airtable
+            url = record["fields"]["Link to Sheet"]
         else:
+            # Just URL
             url = sheet
 
         try:
@@ -213,8 +219,20 @@ class Quiz(commands.Cog):
         '''
         Lists premade sheets for you to use in your quizzes!
         '''
-        await ctx.send(
-            "Here are the Studybot official curated sheets, ready for you to use in the `-quiz` command!\nhttps://www.studybot.ca/explore.html")
+        e = discord.Embed()
+
+        e.description = "[See the full list here](https://www.studybot.ca/explore.html)"
+
+        for record in await self.airtable.sheets:
+            record = record["fields"]
+            e.add_field(name=record["Sheet Name"],
+                        value=f"{record['Description']}\nBy: {record['Creator Discord Tag']}",
+                        inline=False)
+
+        e.set_footer(text="To start a quiz using one of these sheets, use [-quiz <sheet name>]", icon_url=self.bot.user.avatar_url)
+
+        await ctx.send(embed=e, content=
+            "Here are the Studybot official curated sheets, ready for you to use in the `-quiz` command!")
 
 
 # Helper coros
