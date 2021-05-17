@@ -11,6 +11,8 @@ from utils.utilities import textToEmoji, emojiToText, locale
 from db import collection, Airtable
 from .utils import IB
 
+from client import bot_prefix
+
 REACTIONS = "abcdefghijklmnopqrstuvwxyz"
 
 
@@ -229,10 +231,10 @@ class Quiz(commands.Cog):
                         value=f"{record['Description']}\nBy: {record['Creator Discord Tag']}",
                         inline=False)
 
-        e.set_footer(text="To start a quiz using one of these sheets, use [-quiz <sheet name>]", icon_url=self.bot.user.avatar_url)
+        e.set_footer(text=f"To start a quiz using one of these sheets, use [{await bot_prefix(self.bot, ctx.message)}quiz <sheet name>]", icon_url=self.bot.user.avatar_url)
 
         await ctx.send(embed=e, content=
-            "Here are the Studybot official curated sheets, ready for you to use in the `-quiz` command!")
+            f"Here are the Studybot official curated sheets, ready for you to use in the `{await bot_prefix(self.bot, ctx.message)}quiz` command!")
 
 
 # Helper coros
