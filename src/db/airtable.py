@@ -33,9 +33,9 @@ class Airtable():
         '''
         if not self.lastfetch or \
                 datetime.datetime.utcnow() - self.lastfetch > \
-                datetime.timedelta(seconds=60):
+                datetime.timedelta(seconds=300):
             await self.refresh_records()
-            logger.info("Airtable records refreshed due to staleness (60).")
+            logger.info("Airtable records refreshed due to staleness (300).")
         return self.explore["records"]
 
     async def find_sheet(self, name: str) -> dict:

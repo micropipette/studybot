@@ -1,4 +1,3 @@
-import discord
 from discord.ext import commands
 from utils.utilities import locale
 from db import collection
@@ -17,6 +16,13 @@ class Settings(commands.Cog):
     '''
     def __init__(self, bot):
         self.bot: commands.Bot = bot
+
+    @commands.command()
+    async def enableslash(self, ctx: commands.Context):
+        '''
+        Enables slash commands for the bot.
+        '''
+        await ctx.send("Please get someone with the **Manage Server** permission to grant the bot permission to use slash commands using this link: https://discord.com/api/oauth2/authorize?client_id=804401459931643945&permissions=2147535936&scope=bot%20applications.commands")
 
     @commands.command()
     async def prefix(self, ctx: commands.Context, prefix: str = None):

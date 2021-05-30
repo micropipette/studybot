@@ -1,19 +1,16 @@
 import discord
 from discord.ext import commands
-
+from discord_slash.context import SlashContext
 import gspread
 import os
-import asyncio
 import random
 from urllib.parse import urlparse
-
-from utils.utilities import textToEmoji, emojiToText, locale
+from utils.utilities import locale
 from db import collection, Airtable
 from .utils import IB
-
-from client import bot_prefix
-
-REACTIONS = "abcdefghijklmnopqrstuvwxyz"
+from .quiz_backend import listen_quiz
+from discord_slash import cog_ext, SlashCommandOptionType
+from discord_slash.utils.manage_commands import create_option
 
 
 def sheet_name(sheet: str) -> str:
@@ -24,7 +21,7 @@ def sheet_name(sheet: str) -> str:
     return sheet.lower()
 
 
-class Quiz(commands.Cog):
+class Quizzes(commands.Cog):
     '''
     Run multiple-choice or flashcard quiz sessions using your own question banks!
     Coming soon: question banks from the web.
@@ -38,16 +35,7 @@ class Quiz(commands.Cog):
         self.gc = gspread.service_account(filename="temp.json")
         os.remove("temp.json")
 
-    @commands.command(hidden=True)
-    async def testsheet(self, ctx: commands.Context, url: str):
-        '''
-        Pulls raw data from spreadsheet for debugging your sheet
-        '''
-        wks = self.gc.open_by_url(url).get_worksheet(0)
-        await ctx.send(wks.get_all_values())
-
     @commands.command(enabled=False)
-    @commands.max_concurrency(100)
     async def IB(self, ctx: commands.Context, url: str = "https://www.ibdocuments.com/IB%20QUESTIONBANKS/4.%20Fourth%20Edition/questionbank.ibo.org/en/teachers/00000/questionbanks/46-dp-physics/questions/105764.html"):
         '''
         Displays a MCQ from the IB questionbank.
@@ -64,7 +52,6 @@ class Quiz(commands.Cog):
             await ctx.send("Could not scrape the URL provided.")
 
     @commands.command()
-    @commands.max_concurrency(100)
     async def quiz(self, ctx: commands.Context, *, sheet: str = None):
         '''
         Begins a singleplayer quiz, given a Studybot-compatible spreadsheet.
@@ -104,6 +91,32 @@ class Quiz(commands.Cog):
         random.shuffle(questions)
 
         await listen_quiz(ctx, questions)
+
+    @cog_ext.cog_slash(name="quiz", description="Begins a singleplayer quiz, given a Studybot-compatible spreadsheet.",
+                       options=[create_option(
+                           name="sheet",
+                           description="name or URL of the sheet",
+                           option_type=SlashCommandOptionType.STRING,
+                           required=True
+                       )
+                       ])
+    async def slash_quiz(self, ctx: SlashContext, sheet: str=None):
+
+        if not ctx.guild:
+            dm_channel = await ctx.author.create_dm()
+            ctx.channel_id = dm_channel.id
+
+        await self.quiz(ctx=ctx, sheet=sheet)
+
+    @cog_ext.cog_slash(name="template", description="Gets the link for the template spreadsheet, which you can modify to make your own quizzes!")
+    async def slash_template(self, ctx: SlashContext):
+        e = discord.Embed()
+        e.set_image(url="https://cdn.discordapp.com/attachments/804388848510435370/827998690886418463/ezgif-7-c601e2fb575f.gif")
+        await ctx.send(hidden=True,
+                       content='''[Template spreadsheet](https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0/copy)
+**Make a copy of this spreadsheet, and add your own questions!
+Don't forget to set the sheet to `anyone with link can view`**
+        ''')
 
     @commands.command()
     async def template(self, ctx: commands.Context):
@@ -231,189 +244,7 @@ class Quiz(commands.Cog):
                         value=f"{record['Description']}\nBy: {record['Creator Discord Tag']}",
                         inline=False)
 
-        e.set_footer(text=f"To start a quiz using one of these sheets, use [{await bot_prefix(self.bot, ctx.message)}quiz <sheet name>]", icon_url=self.bot.user.avatar_url)
+        e.set_footer(text=f"To start a quiz using one of these sheets, use [{ctx.prefix}quiz <sheet name>]", icon_url=self.bot.user.avatar_url)
 
         await ctx.send(embed=e, content=
-            f"Here are the Studybot official curated sheets, ready for you to use in the `{await bot_prefix(self.bot, ctx.message)}quiz` command!")
-
-
-# Helper coros
-async def sweep_reactions(
-        ctx: commands.Context,
-        message: discord.Message) -> \
-        discord.RawReactionActionEvent:
-    '''
-    Sweep all reactions on a message
-    '''
-    while 1:
-        reaction: discord.Reaction
-        for reaction in message.reactions:
-            # Scan all reactions
-            user: discord.User
-            async for user in reaction.users():
-                # Scan all users in reaction
-                if user.id == ctx.author.id:
-                    # Pick first emoji which has author's reaction
-                    return discord.RawReactionActionEvent(
-                        {"message_id": message.id,
-                            "channel_id": message.channel.id,
-                            "user_id": user.id}, reaction.emoji, None)
-    await asyncio.sleep(1)
-
-
-async def send_result(mcq: bool,
-                      ctx: commands.Context,
-                      message: discord.Message,
-                      emoji: discord.Emoji,
-                      options: list,
-                      correct_index: int) -> None:
-    '''
-    Sends the result of a quiz given the user's response
-    '''
-    if mcq:
-        # Determine whether MCQ answer is correct or not
-        correct_reaction: discord.Reaction = message.reactions[correct_index]
-
-        ctx.current_mcq += 1  # Add 1 to total MCQ
-        if str(correct_reaction.emoji) == str(emoji):
-            ctx.current_score += 1  # Add 1 to current score
-            e = discord.Embed(
-                colour=discord.Color.green(), title="Correct",
-                description=str(correct_reaction) + " " + options[correct_index])
-        else:
-            e = discord.Embed(
-                colour=discord.Color.red(), title="Incorrect",
-                description=str(correct_reaction) + " " + options[correct_index])
-
-        e.set_footer(text=f"You Answered: {emojiToText(str(emoji)).upper()}\nCurrent Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%")
-
-    else:
-        # Show flashcard answer
-        e = discord.Embed(
-            colour=discord.Color.blue())
-
-        answers = "\n".join(options)
-
-        if options and len(answers) < 256:
-            e.title = answers
-        elif options:
-            e.description = answers
-        else:
-            e.title = "(No Answer Found)"
-
-    await ctx.send(embed=e)
-
-
-async def listen_quiz(ctx: commands.Context, questions: list):
-    cont = True
-
-    ctx.current_score = 0
-    ctx.current_mcq = 0
-
-    while cont and questions:
-        # Verify list is not empty
-
-        current_question = questions.pop(0)
-        prompt = current_question[0]
-
-        if not prompt:
-            continue
-            # Move to next question since this one is empty
-
-        image_url = current_question[1]
-        mcq = False
-
-        e = discord.Embed(color=discord.Color.blue())
-
-        desc_text = ""
-
-        if len(prompt) < 252:
-            e.title = f"**{prompt}**"
-        else:
-            desc_text = f"**{prompt}**\n"
-
-        e.set_footer(
-                text=f"{ctx.author.display_name}, react to this post with 🛑 to stop the quiz.")
-
-        options = [
-            op.strip("\n") for op in current_question[
-                2:-1] if op]  # Take only non blank entries
-
-        if image_url:
-            e.set_image(url=image_url)
-
-        if current_question[-1]:
-            # Multiple choice
-            mcq = True
-
-            correct_index: int = ord(current_question[-1][0].lower()) - 97
-
-            for i in range(len(options)):
-                desc_text += f"{textToEmoji(REACTIONS[i])}: {options[i]}\n"
-
-            e.description = desc_text  # Add the MCQ options to the description
-            # Description now has question text (maybe) + mcq questions
-
-            e.set_author(
-                name="React with the correct answer",
-                icon_url=ctx.author.avatar_url)
-        else:
-            correct_index: int = 0  # Give it a default value so as to not raise an error
-            e.set_author(
-                name="React with ✅ to see the answer",
-                icon_url=ctx.author.avatar_url)
-
-        msg = await ctx.send(embed=e)  # Message that bot sends
-
-        if mcq:
-            for i in range(len(options)):
-                await msg.add_reaction(textToEmoji(REACTIONS[i]))
-        else:
-            await msg.add_reaction("✅")
-        await msg.add_reaction("🛑")
-
-        # LISTEN for reactions
-        def check(payload):
-            return payload.message_id == msg.id and payload.user_id == ctx.author.id
-
-        message = await msg.channel.fetch_message(msg.id)
-
-        try:
-            pending_tasks = [
-                ctx.bot.wait_for("raw_reaction_add", timeout=120, check=check),
-                sweep_reactions(ctx, message)
-            ]
-
-            # Process tasks
-            done_tasks, pending_tasks = await asyncio.wait(
-                pending_tasks, return_when=asyncio.FIRST_COMPLETED)
-
-            for task in pending_tasks:
-                task.cancel()
-
-            for task in done_tasks:
-                payload: discord.RawReactionActionEvent = await task
-            # Extract payload from tasks
-
-            if str(payload.emoji) == "🛑":
-                finalscore = f"Final Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%" if ctx.current_mcq else None
-
-                await ctx.send(
-                    "Quiz Terminated. Enter a new link to start again!" + (
-                        ("\n"+finalscore) if finalscore else ""))
-                return
-
-            await send_result(
-                mcq, ctx, message, payload.emoji, options, correct_index)
-
-        except asyncio.TimeoutError:
-            cont = False
-            await msg.edit(
-                content="**Quiz timed out after 120 seconds of inactivity.**")
-            return
-
-    if not questions:
-        finalscore = f"Final Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%" if ctx.current_mcq else None
-        await ctx.send(
-            "Question deck has been exhausted. Enter a new link to start again!" + (("\n"+finalscore) if finalscore else ""))
-        return
+            f"Here are the Studybot official curated sheets, ready for you to use in the `{ctx.prefix}quiz` command!")
