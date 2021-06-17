@@ -81,7 +81,7 @@ async def listen_quiz(ctx: commands.Context, questions: list):
             desc_text = f"**{prompt}**\n"
 
         e.set_footer(
-                text=f"{ctx.author.display_name}, react to this post with 🛑 to stop the quiz.")
+                text=f"{ctx.author.display_name}, press 🛑 to stop the quiz.")
 
         options = [
             op.strip("\n") for op in current_question[
@@ -121,16 +121,19 @@ async def listen_quiz(ctx: commands.Context, questions: list):
 
         if mcq:
             for i in range(len(options)):
-                add_component(Button(label=REACTIONS[i].upper()))
+                add_component(Button(label=REACTIONS[i].upper(), id=ctx.message.id))
         else:
-            add_component(Button(label="✅", style=ButtonStyle.green))
+            add_component(Button(label="✅", style=ButtonStyle.green, id=ctx.message.id))
 
-        add_component(Button(label="🛑", style=ButtonStyle.red))
+        add_component(Button(label="🛑", style=ButtonStyle.red, id=ctx.message.id))
 
         msg = await ctx.channel.send(embed=e, components=components)  # Message that bot sends
 
+        def check(res):
+            return res.author.id == ctx.author.id and res.component.id == str(ctx.message.id)
+
         try:
-            res = await ctx.bot.wait_for("button_click", timeout=120)
+            res = await ctx.bot.wait_for("button_click", timeout=120, check=check)
 
             if res.component.label == "🛑":
                 finalscore = f"Final Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%" if ctx.current_mcq else None

@@ -19,10 +19,9 @@ class Airtable():
         if not self.session:
             self.session = aiohttp.ClientSession()
 
-        # TODO config stuff
-
+        params = {"view": "Approved Sheets"}  # Get only the approved sheets
         async with self.session.get(cfg["Settings"]["airtable-url"],
-                                    headers=headers) as resp:
+                                    headers=headers, params=params) as resp:
             self.explore = await resp.json()
             self.lastfetch = datetime.datetime.utcnow()
 
