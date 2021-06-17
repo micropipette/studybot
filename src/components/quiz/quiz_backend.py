@@ -10,7 +10,7 @@ REACTIONS = "abcdefghijklmnopqrstuvwxyz"
 
 async def send_result(mcq: bool,
                       ctx: commands.Context,
-                      res: discord_components.context.Context,
+                      res,
                       options: list,
                       correct_index: int) -> None:
     '''
