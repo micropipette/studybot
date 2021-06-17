@@ -76,10 +76,10 @@ class Settings(commands.Cog):
             await ctx.send("Only **Administrators** are now allowed to bind sheets.")
 
     @commands.command()
-    async def invite(self, ctx:commands.Context):
+    async def invite(self, ctx: commands.Context):
         '''
         Provides the invite link to invite Studybot to your server!
         '''
         components = [Button(label="Invite Studybot to your server!", style=ButtonStyle.URL,
                       url="https://discord.com/api/oauth2/authorize?client_id=804401459931643945&permissions=52288&scope=bot")]
-    
+        await ctx.send(content="Click the link below to invite Studybot!", components=components)

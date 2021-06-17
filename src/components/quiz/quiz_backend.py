@@ -1,3 +1,4 @@
+from discord import embeds
 from discord_components import Button, ButtonStyle, InteractionType
 import discord_components
 import asyncio
@@ -12,7 +13,8 @@ async def send_result(mcq: bool,
                       ctx: commands.Context,
                       res,
                       options: list,
-                      correct_index: int) -> None:
+                      correct_index: int,
+                      original_embed: discord.Embed) -> None:
     '''
     Sends the result of a quiz given the user's response
     '''
@@ -48,8 +50,8 @@ async def send_result(mcq: bool,
         else:
             e.title = "(No Answer Found)"
 
-    await res.respond(type=InteractionType.UpdateMessage, components=[])
-    await ctx.channel.send(embed=e)
+    await res.respond(type=InteractionType.UpdateMessage,
+                      components=[], embeds=[original_embed, e])
 
 
 async def listen_quiz(ctx: commands.Context, questions: list):
@@ -106,7 +108,8 @@ async def listen_quiz(ctx: commands.Context, questions: list):
                 name="React with the correct answer",
                 icon_url=ctx.author.avatar_url)
         else:
-            correct_index: int = 0  # Give it a default value so as to not raise an error
+            correct_index: int = 0
+            # Give it a default value so as to not raise an error
             e.set_author(
                 name="React with ✅ to see the answer",
                 icon_url=ctx.author.avatar_url)
@@ -121,16 +124,16 @@ async def listen_quiz(ctx: commands.Context, questions: list):
 
         if mcq:
             for i in range(len(options)):
-                add_component(Button(label=REACTIONS[i].upper(), id=ctx.message.id))
+                add_component(Button(label=REACTIONS[i].upper()))
         else:
-            add_component(Button(label="✅", style=ButtonStyle.green, id=ctx.message.id))
+            add_component(Button(label="✅", style=ButtonStyle.green))
 
-        add_component(Button(label="🛑", style=ButtonStyle.red, id=ctx.message.id))
+        add_component(Button(label="🛑", style=ButtonStyle.red))
 
         msg = await ctx.channel.send(embed=e, components=components)  # Message that bot sends
 
         def check(res):
-            return res.author.id == ctx.author.id and res.component.id == str(ctx.message.id)
+            return res.author.id == ctx.author.id and res.message.id == msg.id
 
         try:
             res = await ctx.bot.wait_for("button_click", timeout=120, check=check)
@@ -144,7 +147,7 @@ async def listen_quiz(ctx: commands.Context, questions: list):
                 return
 
             await send_result(
-                mcq, ctx, res, options, correct_index)
+                mcq, ctx, res, options, correct_index, e)
 
         except asyncio.TimeoutError:
             cont = False
