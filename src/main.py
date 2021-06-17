@@ -10,6 +10,7 @@ from utils.utilities import set_start_time, get_uptime
 from db import mongo_startup
 from utils.logger import logger
 from discord import HTTPException
+import topgg
 
 
 dotenv.load_dotenv()  # Load .env file, prior to components loading
@@ -22,6 +23,8 @@ for c in components.cogs:
     bot.add_cog(c(bot))
 
 online = False
+
+bot.topggpy = topgg.DBLClient(bot, os.environ.get("TOPGG"))
 
 
 @bot.event
