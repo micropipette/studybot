@@ -20,7 +20,8 @@ client = commands.Bot(
     activity=discord.Game(cfg["Settings"]["Status"]))
 
 ddb = DiscordComponents(client)
-slash = SlashCommand(client, sync_commands=True)
+#slash = SlashCommand(client, sync_commands=True)
+slash = SlashCommand(client)  
 
 help = client.get_command("help")
 help.hidden = True

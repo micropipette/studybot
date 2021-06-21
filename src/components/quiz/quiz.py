@@ -11,6 +11,7 @@ from .utils import IB
 from .quiz_backend import listen_quiz
 from discord_slash import cog_ext, SlashCommandOptionType
 from discord_slash.utils.manage_commands import create_option
+from discord_components import Button, ButtonStyle
 
 
 def sheet_name(sheet: str) -> str:
@@ -54,9 +55,9 @@ class Quizzes(commands.Cog):
     @commands.command()
     async def quiz(self, ctx: commands.Context, *, sheet: str = None):
         '''
-        Begins a singleplayer quiz, given a Studybot-compatible spreadsheet.
-        Provide a valid Studybot sheet URL or the name of a Bound spreadsheet.
-        Create a sheet using `-template`.
+        Begins a singleplayer quiz from a Studybot sheet.
+        Provide a sheet URL or the name of a Bound spreadsheet.
+        Create your own sheet using `-template`.
         '''
         if not sheet:
             await ctx.send("Please provide a Sheets URL or a valid bound sheet name.\nFor example, `-quiz https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0`\n\nCreate a quiz spreadsheet by running `-template` and following the instructions")
@@ -122,21 +123,21 @@ Don't forget to set the sheet to `anyone with link can view`**
     async def template(self, ctx: commands.Context):
         '''
         Gets the link for the template spreadsheet.
-
-        Make a copy of this spreadsheet, and fill with your own questions!
         '''
-        await ctx.send('''Template spreadsheet:
-        https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0/copy
+        e = discord.Embed(title="Using the template")
+        e.set_image(url="https://cdn.discordapp.com/attachments/804388848510435370/827998690886418463/ezgif-7-c601e2fb575f.gif")
 
-        **Make a copy of this spreadsheet, and add your own questions!
-          Don't forget to set the sheet to `anyone with link can view`**
-        ''')
+        components = [[Button(label="Template spreadsheet", style=ButtonStyle.URL,
+                      url="https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0/copy"),
+                      Button(label="Tutorial Video", style=ButtonStyle.URL,
+                      url="https://youtu.be/cdv8aSUOyMg")]]
+        await ctx.send(embed=e, content="**Make a copy of this spreadsheet, and add your own questions!\nDon't forget to set the sheet to `anyone with link can view`**", components=components)
+
 
     @commands.command()
     async def bind(self, ctx: commands.Context, url: str = None, *, name: str = None):
         '''
-        Binds a given spreadsheet to this server or DM to a custom name.
-        e.g. `-bind https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0 Fun Trivia` 
+        Binds a given spreadsheet to this context under a custom name.
         '''
         if not url or not name:
             await ctx.send("Please provide a Sheets URL or a valid bound sheet name.\nFor example, `-bind https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0 Fun Trivia`\n\nCreate a quiz spreadsheet by running `-template` and following the instructions")
@@ -186,7 +187,6 @@ Don't forget to set the sheet to `anyone with link can view`**
     async def unbind(self, ctx: commands.Context, *, name: str = None):
         '''
         Unbinds the spreadsheet with the specified name, if you own it.
-        e.g. `-unbind Fun Trivia` 
         '''
         if not name:
             await ctx.send("Please provide the name a of a bound sheet you own. e.g. `-unbind Fun Trivia`")
@@ -215,10 +215,8 @@ Don't forget to set the sheet to `anyone with link can view`**
     @commands.command()
     async def sheets(self, ctx: commands.Context):
         '''
-        Lists all bound sheets on the server.
-        To bind a sheet, use the `-bind` command.
+        Lists all bound sheets in this context.
         '''
-
         if ctx.guild:
             e = discord.Embed(title=f"All bound sheets in {ctx.guild.name}")
         else:
@@ -226,6 +224,8 @@ Don't forget to set the sheet to `anyone with link can view`**
 
         for document in collection("bindings").find({"locale": locale(ctx)}):
             e.add_field(name=document["name"], value=f"[Link to Sheet]({document['URL']})")
+
+        e.set_footer(text="To bind a sheet, use the `-bind` command.")
 
         await ctx.send(embed=e)
 
@@ -235,6 +235,8 @@ Don't forget to set the sheet to `anyone with link can view`**
         Lists premade sheets for you to use in your quizzes!
         '''
         e = discord.Embed()
+
+        # TODO PAGINATE
 
         e.description = "[See the full list here](https://www.studybot.ca/explore.html)"
 
