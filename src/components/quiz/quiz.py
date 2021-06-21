@@ -11,7 +11,8 @@ from .utils import IB
 from .quiz_backend import listen_quiz
 from discord_slash import cog_ext, SlashCommandOptionType
 from discord_slash.utils.manage_commands import create_option
-from discord_components import Button, ButtonStyle
+from discord_components import Button, ButtonStyle, InteractionType
+import asyncio
 
 
 def sheet_name(sheet: str) -> str:
@@ -234,19 +235,69 @@ Don't forget to set the sheet to `anyone with link can view`**
         '''
         Lists premade sheets for you to use in your quizzes!
         '''
-        e = discord.Embed()
+        embeds = []
 
-        # TODO PAGINATE
+        def add_embed():
+            embeds.append(discord.Embed(description=f"Here are the Studybot official curated sheets, ready for you to use in the `{ctx.prefix}quiz` command! You can start a quiz from the list by clicking on the corresponding button underneath this message.\n[See the full list of sheets here](https://www.studybot.ca/explore.html)",
+                            colour=discord.Color.blue()))
+            embeds[-1].set_footer(text=f"To start a quiz using one of these sheets, use [{ctx.prefix}quiz <sheet name>], or click one of the buttons below!", icon_url=self.bot.user.avatar_url)
 
-        e.description = "[See the full list here](https://www.studybot.ca/explore.html)"
-
+        add_embed()
         for record in await self.airtable.sheets:
             record = record["fields"]
-            e.add_field(name=record["Sheet Name"],
-                        value=f"{record['Description']}\nBy: {record['Creator Discord Tag']}",
-                        inline=False)
 
-        e.set_footer(text=f"To start a quiz using one of these sheets, use [{ctx.prefix}quiz <sheet name>]", icon_url=self.bot.user.avatar_url)
+            if len(embeds[-1].fields) < 4:
+                embeds[-1].add_field(name=record["Sheet Name"],
+                                     value=f"{record['Description']}\nBy: {record['Creator Discord Tag']}",
+                                     inline=False)
+            else:
+                add_embed()
+                embeds[-1].add_field(name=record["Sheet Name"],
+                                     value=f"{record['Description']}\nBy: {record['Creator Discord Tag']}",
+                                     inline=False)
 
-        await ctx.send(embed=e, content=
-            f"Here are the Studybot official curated sheets, ready for you to use in the `{ctx.prefix}quiz` command!")
+        for i in range(len(embeds)):
+            embeds[i].title = f"Explore ({i+1}/{len(embeds)})"
+
+        current_page = 0  # Index
+        last_page = len(embeds) - 1  # Last allowable index
+
+        if len(embeds) == 1:
+            await ctx.send(embed=embeds[0])
+            return
+
+        def components(current_page):
+            return[[Button(label="Previous", style=ButtonStyle.blue, emoji="◀", disabled=(current_page == 0)),
+                    Button(label="Next", style=ButtonStyle.blue, emoji="▶", disabled=(current_page == last_page))],
+                    [Button(label=field.name) for field in embeds[current_page].fields]]
+
+        msg = await ctx.send(embed=embeds[0], components=components(current_page))
+
+        while 1:
+
+            def check(res):
+                return res.author.id == ctx.author.id and res.message.id == msg.id
+
+            try:
+                res = await ctx.bot.wait_for("button_click", timeout=120, check=check)
+
+                quiz = False
+
+                if res.component.label == "Previous":
+                    current_page -= 1
+                elif res.component.label == "Next":
+                    current_page += 1
+                else:
+                    quiz = True
+
+                await res.respond(type=InteractionType.UpdateMessage,
+                                components=components(current_page),
+                                embed=embeds[current_page])
+
+                if quiz:
+                    await self.quiz(ctx, sheet=res.component.label)
+
+            except asyncio.TimeoutError:
+                await msg.edit(
+                    components=[])
+                return

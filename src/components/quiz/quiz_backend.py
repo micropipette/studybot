@@ -1,6 +1,4 @@
-from discord import embeds
 from discord_components import Button, ButtonStyle, InteractionType
-import discord_components
 import asyncio
 import discord
 from discord.ext import commands
@@ -55,12 +53,10 @@ async def send_result(mcq: bool,
 
 
 async def listen_quiz(ctx: commands.Context, questions: list):
-    cont = True
-
     ctx.current_score = 0
     ctx.current_mcq = 0
 
-    while cont and questions:
+    while questions:
         # Verify list is not empty
 
         current_question = questions.pop(0)
@@ -150,13 +146,12 @@ async def listen_quiz(ctx: commands.Context, questions: list):
                 mcq, ctx, res, options, correct_index, e)
 
         except asyncio.TimeoutError:
-            cont = False
             await msg.edit(
                 content="**Quiz timed out after 120 seconds of inactivity.**")
             return
 
-    if not questions:
-        finalscore = f"Final Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%" if ctx.current_mcq else None
-        await ctx.channel.send(
-            "Question deck has been exhausted. Enter a new link to start again!" + (("\n"+finalscore) if finalscore else ""))
-        return
+    finalscore = f"Final Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%" \
+                 if ctx.current_mcq else None
+    await ctx.channel.send(
+        "Question deck has been exhausted. Enter a new link to start again!" + (("\n"+finalscore) if finalscore else ""))
+    return
