@@ -11,8 +11,8 @@ from .utils import IB
 from .quiz_backend import listen_quiz
 from discord_slash import cog_ext, SlashCommandOptionType
 from discord_slash.utils.manage_commands import create_option
-from discord_components import Button, ButtonStyle, InteractionType
-import asyncio
+from discord_components import Button, ButtonStyle
+from client.button_menu import send_menu_linker
 
 
 def sheet_name(sheet: str) -> str:
@@ -58,10 +58,10 @@ class Quizzes(commands.Cog):
         '''
         Begins a singleplayer quiz from a Studybot sheet.
         Provide a sheet URL or the name of a Bound spreadsheet.
-        Create your own sheet using `-template`.
+        Create your own sheet using the `template` command.
         '''
         if not sheet:
-            await ctx.send("Please provide a Sheets URL or a valid bound sheet name.\nFor example, `-quiz https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0`\n\nCreate a quiz spreadsheet by running `-template` and following the instructions")
+            await ctx.send(f"Please provide a Sheets URL or a valid bound sheet name.\nFor example, `{ctx.prefix}quiz https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0`\n\nCreate a quiz spreadsheet by running `{ctx.prefix}template` and following the instructions")
             return
 
         if document := collection("bindings").find_one({"name_lower": sheet_name(sheet), "locale": locale(ctx)}):
@@ -84,7 +84,11 @@ class Quizzes(commands.Cog):
             await ctx.send("The sheet you linked is not shared publicly. Please check that your sheet is shared with **anyone with link**.")
             return
 
-        await ctx.send(f"Starting quiz for `{title}`...")
+        start_embed = discord.Embed(title=f"Starting quiz for `{title}`...", colour=discord.Colour.green())
+
+        start_embed.set_author(icon_url=ctx.author.avatar_url, name=f"Quiz for {ctx.author.display_name}")
+
+        await ctx.send(embed=start_embed)
 
         wks = sheet.get_worksheet(0)
 
@@ -141,7 +145,7 @@ Don't forget to set the sheet to `anyone with link can view`**
         Binds a given spreadsheet to this context under a custom name.
         '''
         if not url or not name:
-            await ctx.send("Please provide a Sheets URL or a valid bound sheet name.\nFor example, `-bind https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0 Fun Trivia`\n\nCreate a quiz spreadsheet by running `-template` and following the instructions")
+            await ctx.send(f"Please provide a Sheets URL or a valid bound sheet name.\nFor example, `{ctx.prefix}bind https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0 Fun Trivia`\n\nCreate a quiz spreadsheet by running `{ctx.prefix}template` and following the instructions")
             return
 
         try:
@@ -190,7 +194,7 @@ Don't forget to set the sheet to `anyone with link can view`**
         Unbinds the spreadsheet with the specified name, if you own it.
         '''
         if not name:
-            await ctx.send("Please provide the name a of a bound sheet you own. e.g. `-unbind Fun Trivia`")
+            await ctx.send(f"Please provide the name a of a bound sheet you own. e.g. `{ctx.prefix}unbind Fun Trivia`")
             return
 
         if document := collection("bindings").find_one(
@@ -218,17 +222,37 @@ Don't forget to set the sheet to `anyone with link can view`**
         '''
         Lists all bound sheets in this context.
         '''
-        if ctx.guild:
-            e = discord.Embed(title=f"All bound sheets in {ctx.guild.name}")
-        else:
-            e = discord.Embed(title=f"All bound sheets in this DM")
+        embeds = []
 
-        for document in collection("bindings").find({"locale": locale(ctx)}):
-            e.add_field(name=document["name"], value=f"[Link to Sheet]({document['URL']})")
+        def add_embed():
 
-        e.set_footer(text="To bind a sheet, use the `-bind` command.")
+            if ctx.guild:
+                e = discord.Embed(description=f"Here are the bound sheets in {ctx.guild.name}.\nYou can start a quiz from the list by clicking on the corresponding button underneath this message.\nTo bind a sheet, use the `{ctx.prefix}bind` command.",
+                                colour=discord.Color.blue())
+            else:
+                e = discord.Embed(description=f"Here are the sheets in this DM.\nYou can start a quiz from the list by clicking on the corresponding button underneath this message.\nTo bind a sheet, use the `{ctx.prefix}bind` command.",
+                                colour=discord.Color.blue())
 
-        await ctx.send(embed=e)
+            embeds.append(e)
+            embeds[-1].set_footer(text=f"To start a quiz using one of these sheets, use [{ctx.prefix}quiz <sheet name>], or click one of the buttons below!", icon_url=self.bot.user.avatar_url)
+
+        add_embed()
+        for record in collection("bindings").find({"locale": locale(ctx)}):
+
+            if len(embeds[-1].fields) < 4:
+                embeds[-1].add_field(name=record["name"],
+                                     value=f"Bound by <@{record['user']}>",
+                                     inline=False)
+            else:
+                add_embed()
+                embeds[-1].add_field(name=record["name"],
+                                     value=f"Bound by <@{record['user']}>",
+                                     inline=False)
+
+        for i in range(len(embeds)):
+            embeds[i].title = f"Bound Sheets ({i+1}/{len(embeds)})"
+
+        await send_menu_linker(ctx, embeds)
 
     @commands.command()
     async def explore(self, ctx: commands.Context):
@@ -259,45 +283,4 @@ Don't forget to set the sheet to `anyone with link can view`**
         for i in range(len(embeds)):
             embeds[i].title = f"Explore ({i+1}/{len(embeds)})"
 
-        current_page = 0  # Index
-        last_page = len(embeds) - 1  # Last allowable index
-
-        if len(embeds) == 1:
-            await ctx.send(embed=embeds[0])
-            return
-
-        def components(current_page):
-            return[[Button(label="Previous", style=ButtonStyle.blue, emoji="◀", disabled=(current_page == 0)),
-                    Button(label="Next", style=ButtonStyle.blue, emoji="▶", disabled=(current_page == last_page))],
-                    [Button(label=field.name) for field in embeds[current_page].fields]]
-
-        msg = await ctx.send(embed=embeds[0], components=components(current_page))
-
-        while 1:
-
-            def check(res):
-                return res.author.id == ctx.author.id and res.message.id == msg.id
-
-            try:
-                res = await ctx.bot.wait_for("button_click", timeout=120, check=check)
-
-                quiz = False
-
-                if res.component.label == "Previous":
-                    current_page -= 1
-                elif res.component.label == "Next":
-                    current_page += 1
-                else:
-                    quiz = True
-
-                await res.respond(type=InteractionType.UpdateMessage,
-                                components=components(current_page),
-                                embed=embeds[current_page])
-
-                if quiz:
-                    await self.quiz(ctx, sheet=res.component.label)
-
-            except asyncio.TimeoutError:
-                await msg.edit(
-                    components=[])
-                return
+        await send_menu_linker(ctx, embeds)

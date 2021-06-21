@@ -37,9 +37,11 @@ async def send_result(mcq: bool,
     else:
         # Show flashcard answer
         e = discord.Embed(
-            colour=discord.Color.blue())
+            colour=discord.Color.green())
 
         answers = "\n".join(options)
+
+        e.set_author(name="Answer", icon_url="https://media.discordapp.net/attachments/724671574459940974/856634979001434142/unknown.png")
 
         if options and len(answers) < 256:
             e.title = answers
@@ -101,13 +103,13 @@ async def listen_quiz(ctx: commands.Context, questions: list):
             # Description now has question text (maybe) + mcq questions
 
             e.set_author(
-                name="React with the correct answer",
+                name="Select the correct answer",
                 icon_url=ctx.author.avatar_url)
         else:
             correct_index: int = 0
             # Give it a default value so as to not raise an error
             e.set_author(
-                name="React with ✅ to see the answer",
+                name="Press ✅ to see the answer",
                 icon_url=ctx.author.avatar_url)
 
         components = [[]]
@@ -138,8 +140,10 @@ async def listen_quiz(ctx: commands.Context, questions: list):
                 finalscore = f"Final Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%" if ctx.current_mcq else None
                 await res.respond(type=InteractionType.UpdateMessage, components=[])
 
-                await ctx.channel.send(content="Quiz Terminated. Enter a new link to start again!" + (
-                        ("\n"+finalscore) if finalscore else ""))
+                end_embed = discord.Embed(title="Quiz Terminated. Enter a new link to start again!",
+                              description = ("\n"+finalscore) if finalscore else "", colour=discord.Colour.red())
+                end_embed.set_author(icon_url=ctx.author.avatar_url, name=f"Quiz for {ctx.author.display_name}")
+                await ctx.channel.send(embed=end_embed)
                 return
 
             await send_result(
@@ -152,6 +156,10 @@ async def listen_quiz(ctx: commands.Context, questions: list):
 
     finalscore = f"Final Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%" \
                  if ctx.current_mcq else None
-    await ctx.channel.send(
-        "Question deck has been exhausted. Enter a new link to start again!" + (("\n"+finalscore) if finalscore else ""))
+
+    end_embed = discord.Embed(title="Question deck has been exhausted. Enter a new link to start again!",
+                              description = ("\n"+finalscore) if finalscore else "", colour=discord.Colour.dark_grey())
+
+    end_embed.set_author(icon_url=ctx.author.avatar_url, name=f"Quiz for {ctx.author.display_name}")
+    await ctx.channel.send(embed=end_embed)
     return
