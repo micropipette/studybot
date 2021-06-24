@@ -1,6 +1,6 @@
 from .testing import Testing
-from .quiz import Quiz
+from .quiz import Quizzes
 from .settings import Settings, Topgg
 
 # The cogs to be loaded by the bot at runtime
-cogs = [Testing, Quiz, Settings, Topgg]
+cogs = [Testing, Quizzes, Settings, Topgg]

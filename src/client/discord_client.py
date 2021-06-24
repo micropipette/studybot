@@ -1,33 +1,24 @@
 import discord
 from discord.ext import commands
+from discord_components import DiscordComponents
 from config import cfg
 from utils.logger import logger
 from db import collection
 import os
-
-
-# Map prefixes
-async def bot_prefix(bot: commands.Bot, message: discord.Message):
-    '''
-    Returns bot prefix for a specific locale
-    '''
-    locale = message.guild.id if message.guild else message.author.id
-
-    if settings := collection("settings").find_one(locale):
-        return commands.when_mentioned_or(settings["prefix"])(bot, message)
-    else:
-        return commands.when_mentioned_or(
-            cfg["Settings"]["prefix"].strip("\""))(bot, message)
+from studyhelp import StudyHelp
+from utils.prefix import bot_prefix
 
 intents = discord.Intents(guilds=True, messages=True, reactions=True)
 
 client = commands.Bot(
     command_prefix=bot_prefix,
     case_insensitive=True,
-    help_command=commands.MinimalHelpCommand(),
+    help_command=StudyHelp(),
     intents=intents,
     status=discord.Status.online,
     activity=discord.Game(cfg["Settings"]["Status"]))
+
+ddb = DiscordComponents(client)
 
 help = client.get_command("help")
 help.hidden = True

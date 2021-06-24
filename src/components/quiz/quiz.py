@@ -1,17 +1,14 @@
 import discord
 from discord.ext import commands
-
 import gspread
 import os
-import asyncio
 import random
 from urllib.parse import urlparse
-
-from utils.utilities import textToEmoji, emojiToText, locale
-from db import collection
-from .utils import IB
-
-REACTIONS = "abcdefghijklmnopqrstuvwxyz"
+from utils.utilities import locale
+from db import collection, Airtable
+from .quiz_backend import listen_quiz
+from discord_components import Button, ButtonStyle
+from client.button_menu import send_menu_linker
 
 
 def sheet_name(sheet: str) -> str:
@@ -22,59 +19,55 @@ def sheet_name(sheet: str) -> str:
     return sheet.lower()
 
 
-class Quiz(commands.Cog):
+class Quizzes(commands.Cog):
     '''
     Run multiple-choice or flashcard quiz sessions using your own question banks!
     Coming soon: question banks from the web.
     '''
     def __init__(self, bot):
         self.bot: commands.Bot = bot
+        self.airtable: Airtable = Airtable()
 
         with open("temp.json", "w") as f:
             f.write(os.environ.get("SHEETS"))
         self.gc = gspread.service_account(filename="temp.json")
         os.remove("temp.json")
 
-    @commands.command(hidden=True)
-    async def testsheet(self, ctx: commands.Context, url: str):
-        '''
-        Pulls raw data from spreadsheet for debugging your sheet
-        '''
-        wks = self.gc.open_by_url(url).get_worksheet(0)
-        await ctx.send(wks.get_all_values())
+    # @commands.command(enabled=False)
+    # async def IB(self, ctx: commands.Context, url: str = "https://www.ibdocuments.com/IB%20QUESTIONBANKS/4.%20Fourth%20Edition/questionbank.ibo.org/en/teachers/00000/questionbanks/46-dp-physics/questions/105764.html"):
+    #     '''
+    #     Displays a MCQ from the IB questionbank.
+    #     e.g. `-IB https://www.ibdocuments.com/IB%20QUESTIONBANKS/4.%20Fourth%20Edition/questionbank.ibo.org/en/teachers/00000/questionbanks/46-dp-physics/questions/105764.html`
+    #     '''
+    #     try:
+    #         question = await IB(url)
 
-    @commands.command(enabled=False)
-    @commands.max_concurrency(100)
-    async def IB(self, ctx: commands.Context, url: str = "https://www.ibdocuments.com/IB%20QUESTIONBANKS/4.%20Fourth%20Edition/questionbank.ibo.org/en/teachers/00000/questionbanks/46-dp-physics/questions/105764.html"):
-        '''
-        Displays a MCQ from the IB questionbank.
-        e.g. `-IB https://www.ibdocuments.com/IB%20QUESTIONBANKS/4.%20Fourth%20Edition/questionbank.ibo.org/en/teachers/00000/questionbanks/46-dp-physics/questions/105764.html`
-        '''
-        try:
-            question = await IB(url)
-
-            if type(question) == str:
-                await ctx.send(f"Question Type is: {question}, which is not supported right now.")
-            else:
-                await listen_quiz(ctx, [question])
-        except Exception:
-            await ctx.send("Could not scrape the URL provided.")
+    #         if type(question) == str:
+    #             await ctx.send(f"Question Type is: {question}, which is not supported right now.")
+    #         else:
+    #             await listen_quiz(ctx, [question])
+    #     except Exception:
+    #         await ctx.send("Could not scrape the URL provided.")
 
     @commands.command()
-    @commands.max_concurrency(100)
     async def quiz(self, ctx: commands.Context, *, sheet: str = None):
         '''
-        Begins a singleplayer quiz, given a Studybot-compatible spreadsheet.
-        Provide a valid Studybot sheet URL or the name of a Bound spreadsheet.
-        Create a sheet using `-template`.
+        Begins a singleplayer quiz from a Studybot sheet.
+        Provide a sheet URL or the name of a Bound spreadsheet.
+        Create your own sheet using the `template` command.
         '''
         if not sheet:
-            await ctx.send("Please provide a Sheets URL or a valid bound sheet name.\nFor example, `-quiz https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0`\n\nCreate a quiz spreadsheet by running `-template` and following the instructions")
+            await ctx.send(f"Please provide a Sheets URL or a valid bound sheet name.\nFor example, `{ctx.prefix}quiz https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0`\n\nCreate a quiz spreadsheet by running `{ctx.prefix}template` and following the instructions")
             return
 
         if document := collection("bindings").find_one({"name_lower": sheet_name(sheet), "locale": locale(ctx)}):
+            # Search mongoDB
             url = document["URL"]
+        elif record := await self.airtable.find_sheet(sheet):
+            # Search airtable
+            url = record["fields"]["Link to Sheet"]
         else:
+            # Just URL
             url = sheet
 
         try:
@@ -87,7 +80,11 @@ class Quiz(commands.Cog):
             await ctx.send("The sheet you linked is not shared publicly. Please check that your sheet is shared with **anyone with link**.")
             return
 
-        await ctx.send(f"Starting quiz for `{title}`...")
+        start_embed = discord.Embed(title=f"Starting quiz for `{title}`...", colour=discord.Colour.green())
+
+        start_embed.set_author(icon_url=ctx.author.avatar_url, name=f"Quiz for {ctx.author.display_name}")
+
+        await ctx.send(embed=start_embed)
 
         wks = sheet.get_worksheet(0)
 
@@ -101,24 +98,24 @@ class Quiz(commands.Cog):
     async def template(self, ctx: commands.Context):
         '''
         Gets the link for the template spreadsheet.
-
-        Make a copy of this spreadsheet, and fill with your own questions!
         '''
-        await ctx.send('''Template spreadsheet:
-        https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0/copy
+        e = discord.Embed(title="Using the template")
+        e.set_image(url="https://cdn.discordapp.com/attachments/804388848510435370/827998690886418463/ezgif-7-c601e2fb575f.gif")
 
-        **Make a copy of this spreadsheet, and add your own questions!
-          Don't forget to set the sheet to `anyone with link can view`**
-        ''')
+        components = [[Button(label="Template spreadsheet", style=ButtonStyle.URL,
+                      url="https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0/copy"),
+                      Button(label="Tutorial Video", style=ButtonStyle.URL,
+                      url="https://youtu.be/cdv8aSUOyMg")]]
+        await ctx.send(embed=e, content="**Make a copy of this spreadsheet, and add your own questions!\nDon't forget to set the sheet to `anyone with link can view`**", components=components)
+
 
     @commands.command()
     async def bind(self, ctx: commands.Context, url: str = None, *, name: str = None):
         '''
-        Binds a given spreadsheet to this server or DM to a custom name.
-        e.g. `-bind https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0 Fun Trivia` 
+        Binds a given spreadsheet to this context under a custom name.
         '''
         if not url or not name:
-            await ctx.send("Please provide a Sheets URL or a valid bound sheet name.\nFor example, `-bind https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0 Fun Trivia`\n\nCreate a quiz spreadsheet by running `-template` and following the instructions")
+            await ctx.send(f"Please provide a Sheets URL or a valid bound sheet name.\nFor example, `{ctx.prefix}bind https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0 Fun Trivia`\n\nCreate a quiz spreadsheet by running `{ctx.prefix}template` and following the instructions")
             return
 
         try:
@@ -165,10 +162,9 @@ class Quiz(commands.Cog):
     async def unbind(self, ctx: commands.Context, *, name: str = None):
         '''
         Unbinds the spreadsheet with the specified name, if you own it.
-        e.g. `-unbind Fun Trivia` 
         '''
         if not name:
-            await ctx.send("Please provide the name a of a bound sheet you own. e.g. `-unbind Fun Trivia`")
+            await ctx.send(f"Please provide the name a of a bound sheet you own. e.g. `{ctx.prefix}unbind Fun Trivia`")
             return
 
         if document := collection("bindings").find_one(
@@ -194,206 +190,67 @@ class Quiz(commands.Cog):
     @commands.command()
     async def sheets(self, ctx: commands.Context):
         '''
-        Lists all bound sheets on the server.
-        To bind a sheet, use the `-bind` command.
+        Lists all bound sheets in this context.
         '''
+        embeds = []
 
-        if ctx.guild:
-            e = discord.Embed(title=f"All bound sheets in {ctx.guild.name}")
-        else:
-            e = discord.Embed(title=f"All bound sheets in this DM")
+        def add_embed():
 
-        for document in collection("bindings").find({"locale": locale(ctx)}):
-            e.add_field(name=document["name"], value=f"[Link to Sheet]({document['URL']})")
+            if ctx.guild:
+                e = discord.Embed(description=f"Here are the bound sheets in {ctx.guild.name}.\nYou can start a quiz from the list by clicking on the corresponding button underneath this message.\nTo bind a sheet, use the `{ctx.prefix}bind` command.",
+                                colour=discord.Color.blue())
+            else:
+                e = discord.Embed(description=f"Here are the sheets in this DM.\nYou can start a quiz from the list by clicking on the corresponding button underneath this message.\nTo bind a sheet, use the `{ctx.prefix}bind` command.",
+                                colour=discord.Color.blue())
 
-        await ctx.send(embed=e)
+            embeds.append(e)
+            embeds[-1].set_footer(text=f"To start a quiz using one of these sheets, use [{ctx.prefix}quiz <sheet name>], or click one of the buttons below!", icon_url=self.bot.user.avatar_url)
+
+        add_embed()
+        for record in collection("bindings").find({"locale": locale(ctx)}):
+
+            if len(embeds[-1].fields) < 4:
+                embeds[-1].add_field(name=record["name"],
+                                     value=f"Bound by <@{record['user']}>",
+                                     inline=False)
+            else:
+                add_embed()
+                embeds[-1].add_field(name=record["name"],
+                                     value=f"Bound by <@{record['user']}>",
+                                     inline=False)
+
+        for i in range(len(embeds)):
+            embeds[i].title = f"Bound Sheets ({i+1}/{len(embeds)})"
+
+        await send_menu_linker(ctx, embeds)
 
     @commands.command()
     async def explore(self, ctx: commands.Context):
         '''
         Lists premade sheets for you to use in your quizzes!
         '''
-        await ctx.send(
-            "Here are the Studybot official curated sheets, ready for you to use in the `-quiz` command!\nhttps://www.studybot.ca/explore.html")
+        embeds = []
 
+        def add_embed():
+            embeds.append(discord.Embed(description=f"Here are the Studybot official curated sheets, ready for you to use in the `{ctx.prefix}quiz` command! You can start a quiz from the list by clicking on the corresponding button underneath this message.\n[See the full list of sheets here](https://www.studybot.ca/explore.html)",
+                            colour=discord.Color.blue()))
+            embeds[-1].set_footer(text=f"To start a quiz using one of these sheets, use [{ctx.prefix}quiz <sheet name>], or click one of the buttons below!", icon_url=self.bot.user.avatar_url)
 
-# Helper coros
-async def sweep_reactions(
-        ctx: commands.Context,
-        message: discord.Message) -> \
-        discord.RawReactionActionEvent:
-    '''
-    Sweep all reactions on a message
-    '''
-    while 1:
-        reaction: discord.Reaction
-        for reaction in message.reactions:
-            # Scan all reactions
-            user: discord.User
-            async for user in reaction.users():
-                # Scan all users in reaction
-                if user.id == ctx.author.id:
-                    # Pick first emoji which has author's reaction
-                    return discord.RawReactionActionEvent(
-                        {"message_id": message.id,
-                            "channel_id": message.channel.id,
-                            "user_id": user.id}, reaction.emoji, None)
-    await asyncio.sleep(1)
+        add_embed()
+        for record in await self.airtable.sheets:
+            record = record["fields"]
 
+            if len(embeds[-1].fields) < 4:
+                embeds[-1].add_field(name=record["Sheet Name"],
+                                     value=f"{record['Description']}\nBy: {record['Creator Discord Tag']}",
+                                     inline=False)
+            else:
+                add_embed()
+                embeds[-1].add_field(name=record["Sheet Name"],
+                                     value=f"{record['Description']}\nBy: {record['Creator Discord Tag']}",
+                                     inline=False)
 
-async def send_result(mcq: bool,
-                      ctx: commands.Context,
-                      message: discord.Message,
-                      emoji: discord.Emoji,
-                      options: list,
-                      correct_index: int) -> None:
-    '''
-    Sends the result of a quiz given the user's response
-    '''
-    if mcq:
-        # Determine whether MCQ answer is correct or not
-        correct_reaction: discord.Reaction = message.reactions[correct_index]
+        for i in range(len(embeds)):
+            embeds[i].title = f"Explore ({i+1}/{len(embeds)})"
 
-        ctx.current_mcq += 1  # Add 1 to total MCQ
-        if str(correct_reaction.emoji) == str(emoji):
-            ctx.current_score += 1  # Add 1 to current score
-            e = discord.Embed(
-                colour=discord.Color.green(), title="Correct",
-                description=str(correct_reaction) + " " + options[correct_index])
-        else:
-            e = discord.Embed(
-                colour=discord.Color.red(), title="Incorrect",
-                description=str(correct_reaction) + " " + options[correct_index])
-
-        e.set_footer(text=f"You Answered: {emojiToText(str(emoji)).upper()}\nCurrent Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%")
-
-    else:
-        # Show flashcard answer
-        e = discord.Embed(
-            colour=discord.Color.blue())
-
-        answers = "\n".join(options)
-
-        if options and len(answers) < 256:
-            e.title = answers
-        elif options:
-            e.description = answers
-        else:
-            e.title = "(No Answer Found)"
-
-    await ctx.send(embed=e)
-
-
-async def listen_quiz(ctx: commands.Context, questions: list):
-    cont = True
-
-    ctx.current_score = 0
-    ctx.current_mcq = 0
-
-    while cont and questions:
-        # Verify list is not empty
-
-        current_question = questions.pop(0)
-        prompt = current_question[0]
-
-        if not prompt:
-            continue
-            # Move to next question since this one is empty
-
-        image_url = current_question[1]
-        mcq = False
-
-        e = discord.Embed(color=discord.Color.blue())
-
-        desc_text = ""
-
-        if len(prompt) < 252:
-            e.title = f"**{prompt}**"
-        else:
-            desc_text = f"**{prompt}**\n"
-
-        e.set_footer(
-                text=f"{ctx.author.display_name}, react to this post with 🛑 to stop the quiz.")
-
-        options = [
-            op.strip("\n") for op in current_question[
-                2:-1] if op]  # Take only non blank entries
-
-        if image_url:
-            e.set_image(url=image_url)
-
-        if current_question[-1]:
-            # Multiple choice
-            mcq = True
-
-            correct_index: int = ord(current_question[-1][0].lower()) - 97
-
-            for i in range(len(options)):
-                desc_text += f"{textToEmoji(REACTIONS[i])}: {options[i]}\n"
-
-            e.description = desc_text  # Add the MCQ options to the description
-            # Description now has question text (maybe) + mcq questions
-
-            e.set_author(
-                name="React with the correct answer",
-                icon_url=ctx.author.avatar_url)
-        else:
-            correct_index: int = 0  # Give it a default value so as to not raise an error
-            e.set_author(
-                name="React with ✅ to see the answer",
-                icon_url=ctx.author.avatar_url)
-
-        msg = await ctx.send(embed=e)  # Message that bot sends
-
-        if mcq:
-            for i in range(len(options)):
-                await msg.add_reaction(textToEmoji(REACTIONS[i]))
-        else:
-            await msg.add_reaction("✅")
-        await msg.add_reaction("🛑")
-
-        # LISTEN for reactions
-        def check(payload):
-            return payload.message_id == msg.id and payload.user_id == ctx.author.id
-
-        message = await msg.channel.fetch_message(msg.id)
-
-        try:
-            pending_tasks = [
-                ctx.bot.wait_for("raw_reaction_add", timeout=120, check=check),
-                sweep_reactions(ctx, message)
-            ]
-
-            # Process tasks
-            done_tasks, pending_tasks = await asyncio.wait(
-                pending_tasks, return_when=asyncio.FIRST_COMPLETED)
-
-            for task in pending_tasks:
-                task.cancel()
-
-            for task in done_tasks:
-                payload: discord.RawReactionActionEvent = await task
-            # Extract payload from tasks
-
-            if str(payload.emoji) == "🛑":
-                finalscore = f"Final Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%" if ctx.current_mcq else None
-
-                await ctx.send(
-                    "Quiz Terminated. Enter a new link to start again!" + (
-                        ("\n"+finalscore) if finalscore else ""))
-                return
-
-            await send_result(
-                mcq, ctx, message, payload.emoji, options, correct_index)
-
-        except asyncio.TimeoutError:
-            cont = False
-            await msg.edit(
-                content="**Quiz timed out after 120 seconds of inactivity.**")
-            return
-
-    if not questions:
-        finalscore = f"Final Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%" if ctx.current_mcq else None
-        await ctx.send(
-            "Question deck has been exhausted. Enter a new link to start again!" + (("\n"+finalscore) if finalscore else ""))
-        return
+        await send_menu_linker(ctx, embeds)

@@ -1,7 +1,8 @@
-import discord
 from discord.ext import commands
 from utils.utilities import locale
 from db import collection
+
+from discord_components import Button, ButtonStyle
 
 
 def default_settings(ctx):
@@ -19,9 +20,18 @@ class Settings(commands.Cog):
         self.bot: commands.Bot = bot
 
     @commands.command()
+    async def invite(self, ctx: commands.Context):
+        '''
+        Provides the invite link to invite Studybot to your server!
+        '''
+        components = [Button(label="Invite Studybot to your server!", style=ButtonStyle.URL,
+                      url="https://discord.com/api/oauth2/authorize?client_id=804401459931643945&permissions=52288&scope=bot")]
+        await ctx.send(content="Click the link below to invite Studybot!", components=components)
+
+    @commands.command()
     async def prefix(self, ctx: commands.Context, prefix: str = None):
         '''
-        Sets the prefix for the bot in the server, or sets it if no prefix is provided
+        Sets the prefix for the bot in the server, or gets it if no prefix is provided
         '''
         if prefix is None:
             await ctx.send(f"Current Prefix is: `{(await self.bot.get_prefix(ctx.message))[-1]}`")

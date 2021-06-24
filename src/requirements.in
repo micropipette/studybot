@@ -1,4 +1,5 @@
 discord.py
+discord_components
 python-dotenv
 pymongo
 dnspython
@@ -6,5 +7,4 @@ bs4
 flask
 pytz
 gspread
-pylatexenc
 topggpy
