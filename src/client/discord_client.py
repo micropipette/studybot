@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 from discord_components import DiscordComponents
-from discord_slash import SlashCommand
 from config import cfg
 from utils.logger import logger
 from db import collection
@@ -20,8 +19,6 @@ client = commands.Bot(
     activity=discord.Game(cfg["Settings"]["Status"]))
 
 ddb = DiscordComponents(client)
-#slash = SlashCommand(client, sync_commands=True)
-slash = SlashCommand(client)  
 
 help = client.get_command("help")
 help.hidden = True

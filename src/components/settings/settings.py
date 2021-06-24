@@ -75,12 +75,3 @@ class Settings(commands.Cog):
             await ctx.send("All users are now allowed to bind sheets.")
         else:
             await ctx.send("Only **Administrators** are now allowed to bind sheets.")
-
-    @commands.command()
-    @commands.guild_only()
-    async def enableslash(self, ctx: commands.Context):
-        '''
-        Enables slash commands for the bot.
-        '''
-        await ctx.send("Please get someone with the **Manage Server** permission to grant the bot permission to use slash commands using this link: https://discord.com/api/oauth2/authorize?client_id=804401459931643945&permissions=2147535936&scope=bot%20applications.commands")
-

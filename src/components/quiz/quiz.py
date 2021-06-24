@@ -1,16 +1,12 @@
 import discord
 from discord.ext import commands
-from discord_slash.context import SlashContext
 import gspread
 import os
 import random
 from urllib.parse import urlparse
 from utils.utilities import locale
 from db import collection, Airtable
-from .utils import IB
 from .quiz_backend import listen_quiz
-from discord_slash import cog_ext, SlashCommandOptionType
-from discord_slash.utils.manage_commands import create_option
 from discord_components import Button, ButtonStyle
 from client.button_menu import send_menu_linker
 
@@ -37,21 +33,21 @@ class Quizzes(commands.Cog):
         self.gc = gspread.service_account(filename="temp.json")
         os.remove("temp.json")
 
-    @commands.command(enabled=False)
-    async def IB(self, ctx: commands.Context, url: str = "https://www.ibdocuments.com/IB%20QUESTIONBANKS/4.%20Fourth%20Edition/questionbank.ibo.org/en/teachers/00000/questionbanks/46-dp-physics/questions/105764.html"):
-        '''
-        Displays a MCQ from the IB questionbank.
-        e.g. `-IB https://www.ibdocuments.com/IB%20QUESTIONBANKS/4.%20Fourth%20Edition/questionbank.ibo.org/en/teachers/00000/questionbanks/46-dp-physics/questions/105764.html`
-        '''
-        try:
-            question = await IB(url)
+    # @commands.command(enabled=False)
+    # async def IB(self, ctx: commands.Context, url: str = "https://www.ibdocuments.com/IB%20QUESTIONBANKS/4.%20Fourth%20Edition/questionbank.ibo.org/en/teachers/00000/questionbanks/46-dp-physics/questions/105764.html"):
+    #     '''
+    #     Displays a MCQ from the IB questionbank.
+    #     e.g. `-IB https://www.ibdocuments.com/IB%20QUESTIONBANKS/4.%20Fourth%20Edition/questionbank.ibo.org/en/teachers/00000/questionbanks/46-dp-physics/questions/105764.html`
+    #     '''
+    #     try:
+    #         question = await IB(url)
 
-            if type(question) == str:
-                await ctx.send(f"Question Type is: {question}, which is not supported right now.")
-            else:
-                await listen_quiz(ctx, [question])
-        except Exception:
-            await ctx.send("Could not scrape the URL provided.")
+    #         if type(question) == str:
+    #             await ctx.send(f"Question Type is: {question}, which is not supported right now.")
+    #         else:
+    #             await listen_quiz(ctx, [question])
+    #     except Exception:
+    #         await ctx.send("Could not scrape the URL provided.")
 
     @commands.command()
     async def quiz(self, ctx: commands.Context, *, sheet: str = None):
@@ -97,32 +93,6 @@ class Quizzes(commands.Cog):
         random.shuffle(questions)
 
         await listen_quiz(ctx, questions)
-
-    @cog_ext.cog_slash(name="quiz", description="Begins a singleplayer quiz, given a Studybot-compatible spreadsheet.",
-                       options=[create_option(
-                           name="sheet",
-                           description="name or URL of the sheet",
-                           option_type=SlashCommandOptionType.STRING,
-                           required=True
-                       )
-                       ])
-    async def slash_quiz(self, ctx: SlashContext, sheet: str=None):
-
-        if not ctx.guild:
-            dm_channel = await ctx.author.create_dm()
-            ctx.channel_id = dm_channel.id
-
-        await self.quiz(ctx=ctx, sheet=sheet)
-
-    @cog_ext.cog_slash(name="template", description="Gets the link for the template spreadsheet, which you can modify to make your own quizzes!")
-    async def slash_template(self, ctx: SlashContext):
-        e = discord.Embed()
-        e.set_image(url="https://cdn.discordapp.com/attachments/804388848510435370/827998690886418463/ezgif-7-c601e2fb575f.gif")
-        await ctx.send(hidden=True,
-                       content='''[Template spreadsheet](https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0/copy)
-**Make a copy of this spreadsheet, and add your own questions!
-Don't forget to set the sheet to `anyone with link can view`**
-        ''')
 
     @commands.command()
     async def template(self, ctx: commands.Context):
