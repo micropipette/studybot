@@ -57,7 +57,7 @@ class Quizzes(commands.Cog):
         Create your own sheet using the `template` command.
         '''
         if not sheet:
-            await ctx.send(f"Please provide a Sheets URL or a valid bound sheet name.\nFor example, `{ctx.prefix}quiz https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0`\n\nCreate a quiz spreadsheet by running `{ctx.prefix}template` and following the instructions")
+            await ctx.send(f"Please provide a Sheets URL or a valid bound sheet name.\nFor example, `{(await self.bot.get_prefix(ctx.message))[-1]}quiz https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0`\n\nCreate a quiz spreadsheet by running `{(await self.bot.get_prefix(ctx.message))[-1]}template` and following the instructions")
             return
 
         if document := collection("bindings").find_one({"name_lower": sheet_name(sheet), "locale": locale(ctx)}):
@@ -115,7 +115,7 @@ class Quizzes(commands.Cog):
         Binds a given spreadsheet to this context under a custom name.
         '''
         if not url or not name:
-            await ctx.send(f"Please provide a Sheets URL or a valid bound sheet name.\nFor example, `{ctx.prefix}bind https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0 Fun Trivia`\n\nCreate a quiz spreadsheet by running `{ctx.prefix}template` and following the instructions")
+            await ctx.send(f"Please provide a Sheets URL or a valid bound sheet name.\nFor example, `{(await self.bot.get_prefix(ctx.message))[-1]}bind https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0 Fun Trivia`\n\nCreate a quiz spreadsheet by running `{(await self.bot.get_prefix(ctx.message))[-1]}template` and following the instructions")
             return
 
         try:
@@ -145,8 +145,6 @@ class Quizzes(commands.Cog):
                  "URL": url,
                  "user": ctx.author.id})
 
-            await ctx.message.add_reaction("👍")
-
             if ctx.guild:
                 await ctx.send(
                     f"Sheet successfully bound to server `{ctx.guild.name}` with name `{name}`.")
@@ -164,7 +162,7 @@ class Quizzes(commands.Cog):
         Unbinds the spreadsheet with the specified name, if you own it.
         '''
         if not name:
-            await ctx.send(f"Please provide the name a of a bound sheet you own. e.g. `{ctx.prefix}unbind Fun Trivia`")
+            await ctx.send(f"Please provide the name a of a bound sheet you own. e.g. `{(await self.bot.get_prefix(ctx.message))[-1]}unbind Fun Trivia`")
             return
 
         if document := collection("bindings").find_one(
@@ -172,7 +170,6 @@ class Quizzes(commands.Cog):
 
             if document["user"] == ctx.author.id:
                 collection("bindings").delete_one({"locale": locale(ctx), "name_lower": sheet_name(name)})
-                await ctx.message.add_reaction("👍")
 
                 if ctx.guild:
                     await ctx.send(
@@ -194,19 +191,19 @@ class Quizzes(commands.Cog):
         '''
         embeds = []
 
-        def add_embed():
+        async def add_embed():
 
             if ctx.guild:
-                e = discord.Embed(description=f"Here are the bound sheets in {ctx.guild.name}.\nYou can start a quiz from the list by clicking on the corresponding button underneath this message.\nTo bind a sheet, use the `{ctx.prefix}bind` command.",
+                e = discord.Embed(description=f"Here are the bound sheets in {ctx.guild.name}.\nYou can start a quiz from the list by clicking on the corresponding button underneath this message.\nTo bind a sheet, use the `{(await self.bot.get_prefix(ctx.message))[-1]}bind` command.",
                                 colour=discord.Color.blue())
             else:
-                e = discord.Embed(description=f"Here are the sheets in this DM.\nYou can start a quiz from the list by clicking on the corresponding button underneath this message.\nTo bind a sheet, use the `{ctx.prefix}bind` command.",
+                e = discord.Embed(description=f"Here are the sheets in this DM.\nYou can start a quiz from the list by clicking on the corresponding button underneath this message.\nTo bind a sheet, use the `{(await self.bot.get_prefix(ctx.message))[-1]}bind` command.",
                                 colour=discord.Color.blue())
 
             embeds.append(e)
-            embeds[-1].set_footer(text=f"To start a quiz using one of these sheets, use [{ctx.prefix}quiz <sheet name>], or click one of the buttons below!", icon_url=self.bot.user.avatar_url)
+            embeds[-1].set_footer(text=f"To start a quiz using one of these sheets, use [{(await self.bot.get_prefix(ctx.message))[-1]}quiz <sheet name>], or click one of the buttons below!", icon_url=self.bot.user.avatar_url)
 
-        add_embed()
+        await add_embed()
         for record in collection("bindings").find({"locale": locale(ctx)}):
 
             if len(embeds[-1].fields) < 4:
@@ -231,12 +228,12 @@ class Quizzes(commands.Cog):
         '''
         embeds = []
 
-        def add_embed():
-            embeds.append(discord.Embed(description=f"Here are the Studybot official curated sheets, ready for you to use in the `{ctx.prefix}quiz` command! You can start a quiz from the list by clicking on the corresponding button underneath this message.\n[See the full list of sheets here](https://www.studybot.ca/explore.html)",
+        async def add_embed():
+            embeds.append(discord.Embed(description=f"Here are the Studybot official curated sheets, ready for you to use in the `{(await self.bot.get_prefix(ctx.message))[-1]}quiz` command! You can start a quiz from the list by clicking on the corresponding button underneath this message.\n[See the full list of sheets here](https://www.studybot.ca/explore.html)",
                             colour=discord.Color.blue()))
-            embeds[-1].set_footer(text=f"To start a quiz using one of these sheets, use [{ctx.prefix}quiz <sheet name>], or click one of the buttons below!", icon_url=self.bot.user.avatar_url)
+            embeds[-1].set_footer(text=f"To start a quiz using one of these sheets, use [{(await self.bot.get_prefix(ctx.message))[-1]}quiz <sheet name>], or click one of the buttons below!", icon_url=self.bot.user.avatar_url)
 
-        add_embed()
+        await add_embed()
         for record in await self.airtable.sheets:
             record = record["fields"]
 

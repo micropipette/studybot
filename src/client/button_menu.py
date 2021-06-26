@@ -52,11 +52,15 @@ async def send_menu_linker(ctx: commands.context, embeds: discord.Embed):
     last_page = len(embeds) - 1  # Last allowable index
 
     def components(current_page):
-        return[[Button(label="Previous", style=ButtonStyle.blue, emoji="◀", disabled=(current_page == 0)),
+        return [[Button(label="Previous", style=ButtonStyle.blue, emoji="◀", disabled=(current_page == 0)),
                 Button(label="Next", style=ButtonStyle.blue, emoji="▶", disabled=(current_page == last_page))],
-                [Button(label=field.name) for field in embeds[current_page].fields]]
+                [Button(label=field.name) for field in embeds[current_page].fields]] 
 
-    msg = await ctx.send(embed=embeds[0], components=components(current_page))
+    if embeds[current_page].fields:
+        msg = await ctx.send(embed=embeds[0], components=components(current_page))
+    else:
+        msg = await ctx.send(embed=embeds[0])
+        return
 
     while 1:
 

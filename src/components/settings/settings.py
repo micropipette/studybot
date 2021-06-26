@@ -25,7 +25,7 @@ class Settings(commands.Cog):
         Provides the invite link to invite Studybot to your server!
         '''
         components = [Button(label="Invite Studybot to your server!", style=ButtonStyle.URL,
-                      url="https://discord.com/api/oauth2/authorize?client_id=804401459931643945&permissions=52288&scope=bot")]
+                      url="https://discord.com/api/oauth2/authorize?client_id=804401459931643945&permissions=314368&scope=bot")]
         await ctx.send(content="Click the link below to invite Studybot!", components=components)
 
     @commands.command()
@@ -54,7 +54,7 @@ class Settings(commands.Cog):
                 settings = default_settings(ctx)
                 settings["prefix"] = prefix
                 collection("settings").insert_one(settings)
-            await ctx.message.add_reaction("👍")
+            await ctx.send(f"New prefix is: `{prefix}`")
 
     @commands.command()
     @commands.has_guild_permissions(administrator=True)
