@@ -39,8 +39,7 @@ async def send_menu(ctx: commands.context, embeds: discord.Embed):
                               embed=embeds[current_page])
 
         except asyncio.TimeoutError:
-            await msg.edit(
-                components=[])
+            await msg.edit(components=[])
             return
 
 

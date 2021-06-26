@@ -211,7 +211,7 @@ class Quizzes(commands.Cog):
                                      value=f"Bound by <@{record['user']}>",
                                      inline=False)
             else:
-                add_embed()
+                await add_embed()
                 embeds[-1].add_field(name=record["name"],
                                      value=f"Bound by <@{record['user']}>",
                                      inline=False)
@@ -242,7 +242,7 @@ class Quizzes(commands.Cog):
                                      value=f"{record['Description']}\nBy: {record['Creator Discord Tag']}",
                                      inline=False)
             else:
-                add_embed()
+                await add_embed()
                 embeds[-1].add_field(name=record["Sheet Name"],
                                      value=f"{record['Description']}\nBy: {record['Creator Discord Tag']}",
                                      inline=False)
