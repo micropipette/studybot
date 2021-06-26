@@ -5,8 +5,6 @@ from discord_components import Button, ButtonStyle
 
 # Custom help command for Studybot
 
-# TODO make more like the image https://media.discordapp.net/attachments/586550369685864470/829431840703250462/unknown.png
-# MAKE IT A SINGLE LAYER
 
 class StudyHelp(commands.HelpCommand):
     def __init__(self, **options):
@@ -15,14 +13,14 @@ class StudyHelp(commands.HelpCommand):
 
     async def send_bot_help(self, mapping: dict):
         embed = discord.Embed(colour=discord.Color.blue(),
-                              description=f"The following are commands which you can run.\nType `{self.context.prefix}help [command]` for more info on a given command.")
+                              description=f"The following are commands which you can run.\nType `{(await self.context.bot.get_prefix(self.context.message))[-1]}help [command]` for more info on a given command.")
 
         embed.set_footer(text=f"Studybot {version}")
         embed.set_author(name="Studybot Commands List", icon_url=self.context.bot.user.avatar_url, url="https://www.studybot.ca/")
         embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/724671574459940974/856397833807462450/a_db09eb992c31a35306bb9157d78643bf.gif")
 
         components = [[Button(label="Invite Studybot to Your Server", style=ButtonStyle.URL,
-                      url="https://discord.com/api/oauth2/authorize?client_id=804401459931643945&permissions=52288&scope=bot"),
+                      url="https://discord.com/api/oauth2/authorize?client_id=804401459931643945&permissions=314368&scope=bot"),
                       Button(label="Vote for Us", style=ButtonStyle.URL,
                       url="https://top.gg/bot/804401459931643945/vote")],
                       [Button(label="Support Server", style=ButtonStyle.URL,
@@ -39,7 +37,7 @@ class StudyHelp(commands.HelpCommand):
 
                 for cmd in cmds:
                     embed.add_field(
-                        name=self.context.prefix + cmd.qualified_name,
+                        name=(await self.context.bot.get_prefix(self.context.message))[-1] + cmd.qualified_name,
                         value=cmd.help if cmd.help else "No Description", inline=False)
 
         await self.context.send(embed=embed, components=components)
@@ -48,7 +46,7 @@ class StudyHelp(commands.HelpCommand):
         filtered = await self.filter_commands([command])
         # check user actually is allowed to invoke the command
         if filtered:
-            embed = discord.Embed(title=f"`{self.context.prefix}help {command.qualified_name} {command.signature}`",
+            embed = discord.Embed(title=f"`{(await self.context.bot.get_prefix(self.context.message))[-1]}help {command.qualified_name} {command.signature}`",
                               colour=discord.Color.blue(),
                               description=command.help)
 
@@ -69,7 +67,7 @@ class StudyHelp(commands.HelpCommand):
             group.commands
         )
 
-        embed = discord.Embed(title=f"`{self.context.prefix}help {group.qualified_name} {group.signature}`",
+        embed = discord.Embed(title=f"`{(await self.context.bot.get_prefix(self.context.message))[-1]}help {group.qualified_name} {group.signature}`",
                               colour=discord.Color.blue(),
                               description=group.help + "\n**Additional Commands in this group:**")
 

@@ -8,7 +8,7 @@ import os
 from studyhelp import StudyHelp
 from utils.prefix import bot_prefix
 
-intents = discord.Intents(guilds=True, messages=True, reactions=True)
+intents = discord.Intents(guilds=True, messages=True)
 
 client = commands.Bot(
     command_prefix=bot_prefix,
