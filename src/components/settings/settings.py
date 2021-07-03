@@ -17,7 +17,7 @@ class Settings(commands.Cog):
     Set the configuration for the bot on the server
     '''
     def __init__(self, bot):
-        self.bot: commands.Bot = bot
+        self.bot: commands.AutoShardedBot = bot
 
     @commands.command()
     async def invite(self, ctx: commands.Context):

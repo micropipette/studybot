@@ -24,7 +24,9 @@ for c in components.cogs:
 
 online = False
 
-bot.topggpy = topgg.DBLClient(bot, os.environ.get("TOPGG"))
+# Top.gg API
+bot.topggpy = topgg.DBLClient(
+    bot, os.environ.get("TOPGG"), autopost=True, post_shard_count=True)
 
 
 @bot.event
@@ -33,7 +35,7 @@ async def on_connect():
     Connected to Discord
     '''
     logger.info(
-        f"{bot.user} is online, logged into {len(bot.guilds)} server(s).")
+        f"{bot.user} is online, logged into {len(bot.guilds)} server(s), with {bot.shard_count} shard(s).")
 
 
 @bot.event
@@ -45,6 +47,16 @@ async def on_ready():
 
 if cfg["Hosting"]["ping"] == "True":
     keep_alive()
+
+
+@bot.event
+async def on_autopost_success():
+    logger.info(f'Posted server count ({bot.topggpy.guild_count}), shard count ({bot.shard_count})')
+
+
+@bot.event
+async def on_autopost_error(e):
+    logger.info('Error posting server count.')
 
 try:
     bot.run(os.environ.get("TOKEN"))  # Run bot with loaded password

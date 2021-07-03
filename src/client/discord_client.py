@@ -10,7 +10,7 @@ from utils.prefix import bot_prefix
 
 intents = discord.Intents(guilds=True, messages=True)
 
-client = commands.Bot(
+client = commands.AutoShardedBot(
     command_prefix=bot_prefix,
     case_insensitive=True,
     help_command=StudyHelp(),

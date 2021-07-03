@@ -4,7 +4,7 @@ from discord.ext import commands
 
 class Editor(commands.Cog):
     def __init__(self, bot):
-        self.bot: commands.Bot = bot
+        self.bot: commands.AutoShardedBot = bot
     
     async def create(self, ctx: commands.Context, *, name: str):
         '''

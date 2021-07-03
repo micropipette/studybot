@@ -8,7 +8,7 @@ from utils.utilities import locale
 from db import collection, Airtable
 from .quiz_backend import listen_quiz
 from discord_components import Button, ButtonStyle
-from client.button_menu import send_menu_linker
+from utils.button_menu import send_menu_linker
 
 
 def sheet_name(sheet: str) -> str:
@@ -25,7 +25,7 @@ class Quizzes(commands.Cog):
     Coming soon: question banks from the web.
     '''
     def __init__(self, bot):
-        self.bot: commands.Bot = bot
+        self.bot: commands.AutoShardedBot = bot
         self.airtable: Airtable = Airtable()
 
         with open("temp.json", "w") as f:

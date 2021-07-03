@@ -4,7 +4,7 @@ from discord.ext import commands
 from config import cfg
 
 # Map prefixes
-async def bot_prefix(bot: commands.Bot, message: discord.Message):
+async def bot_prefix(bot: commands.AutoShardedBot, message: discord.Message):
     '''
     Returns bot prefix for a specific locale
     '''
