@@ -17,7 +17,16 @@ class Settings(commands.Cog):
     Set the configuration for the bot on the server
     '''
     def __init__(self, bot):
-        self.bot: commands.Bot = bot
+        self.bot: commands.AutoShardedBot = bot
+
+    @commands.command()
+    async def invite(self, ctx: commands.Context):
+        '''
+        Provides the invite link to invite Studybot to your server!
+        '''
+        components = [Button(label="Invite Studybot to your server!", style=ButtonStyle.URL,
+                      url="https://discord.com/api/oauth2/authorize?client_id=804401459931643945&permissions=314368&scope=bot")]
+        await ctx.send(content="Click the link below to invite Studybot!", components=components)
 
     @commands.command()
     async def invite(self, ctx: commands.Context):

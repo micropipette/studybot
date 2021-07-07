@@ -12,7 +12,7 @@ class Testing(commands.Cog):
     Commands for testing the bot.
     '''
     def __init__(self, bot):
-        self.bot: commands.Bot = bot
+        self.bot: commands.AutoShardedBot = bot
 
     @commands.command(hidden=True)
     @commands.is_owner()
@@ -22,7 +22,7 @@ class Testing(commands.Cog):
         '''
         await ctx.send(f"**Uptime**: {round(get_uptime(), 1)}s\n"
                        f"**Version**: {version}\n"
-                       f"Currently Connected to **{len(self.bot.guilds)}** server(s)\n"
+                       f"Currently Connected to **{len(self.bot.guilds)}** server(s), with {self.bot.shard_count} shard(s)\n"
                        f"**API Latency**: {round(self.bot.latency, 4)}s\n"
                        f"Running discord.py version {discord.__version__}")
 
