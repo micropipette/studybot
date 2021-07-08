@@ -38,3 +38,5 @@ If you are contributing, and would like to add a new library to the code, please
 2021 May: Bot is officially verified by Discord
 
 2021 June: Button implementation, major UI overhaul, and Airtable/explore page integration
+
+2021 July: Sharding + more to come
