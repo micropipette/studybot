@@ -41,7 +41,7 @@ async def on_command_error(ctx: commands.Context, exception):
 
     if type(exception) == commands.CommandNotFound:
         try:
-            await ctx.send(exception)
+            await ctx.send(str(exception))
         except discord.Forbidden:
             pass
     else:

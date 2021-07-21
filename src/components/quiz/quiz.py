@@ -95,6 +95,49 @@ class Quizzes(commands.Cog):
         await listen_quiz(ctx, questions)
 
     @commands.command()
+    async def quizmp(self, ctx: commands.Context, *, sheet: str = None):
+        '''
+        Begins a multiplayer quiz from a Studybot sheet.
+        Provide a sheet URL or the name of a Bound spreadsheet.
+        Create your own sheet using the `template` command.
+        '''
+        if not sheet:
+            await ctx.send(f"Please provide a Sheets URL or a valid bound sheet name.\nFor example, `{(await self.bot.get_prefix(ctx.message))[-1]}quiz https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0`\n\nCreate a quiz spreadsheet by running `{(await self.bot.get_prefix(ctx.message))[-1]}template` and following the instructions")
+            return
+
+        if document := collection("bindings").find_one({"name_lower": sheet_name(sheet), "locale": locale(ctx)}):
+            # Search mongoDB
+            url = document["URL"]
+        elif record := await self.airtable.find_sheet(sheet):
+            # Search airtable
+            url = record["fields"]["Link to Sheet"]
+        else:
+            # Just URL
+            url = sheet
+
+        try:
+            sheet: gspread.Spreadsheet = self.gc.open_by_url(url)
+            title = sheet.title
+        except gspread.NoValidUrlKeyFound:
+            await ctx.send("Sheet not found. Please check that your sheet exists and is shared with **anyone with link**.")
+            return
+        except gspread.exceptions.APIError:
+            await ctx.send("The sheet you linked is not shared publicly. Please check that your sheet is shared with **anyone with link**.")
+            return
+
+        start_embed = discord.Embed(title=f"Starting quiz for `{title}`...", colour=discord.Colour.green())
+
+        await ctx.send(embed=start_embed)
+
+        wks = sheet.get_worksheet(0)
+
+        questions = wks.get_all_values()[1:]  # POP first row which is headers
+
+        random.shuffle(questions)
+
+        await listen_quiz(ctx, questions)
+
+    @commands.command()
     async def template(self, ctx: commands.Context):
         '''
         Gets the link for the template spreadsheet.
