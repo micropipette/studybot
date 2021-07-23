@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from discord_components import Button, ButtonStyle, InteractionType
 import asyncio
+import datetime
 
 
 async def send_menu(ctx: commands.context, embeds: discord.Embed):
@@ -62,6 +63,13 @@ async def send_menu_linker(ctx: commands.context, embeds: discord.Embed):
         msg = await ctx.send(embed=embeds[0])
         return
 
+    # async def explore_click_listener(res):
+    #     if res.author.id == ctx.author.id and res.message.id == msg.id:
+    #         pass
+
+    # ctx.bot.add_listener(explore_click_listener, "on_button_click")
+    # This is a cool idea
+
     while 1:
 
         def check(res):
@@ -85,7 +93,8 @@ async def send_menu_linker(ctx: commands.context, embeds: discord.Embed):
 
             if quiz:
                 quiz_cog = ctx.bot.get_cog("Quizzes")
-                await quiz_cog.quiz(ctx, sheet=res.component.label)
+                asyncio.create_task(quiz_cog.quiz(ctx, sheet=res.component.label))
+                # NOTE: Allows the explore menu to spawn quizzes concurrently!
 
         except asyncio.TimeoutError:
             await msg.edit(

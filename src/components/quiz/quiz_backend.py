@@ -3,6 +3,7 @@ import asyncio
 import discord
 from discord.ext import commands
 from utils.utilities import textToEmoji
+from collections import defaultdict
 
 REACTIONS = "abcdefghijklmnopqrstuvwxyz"
 
@@ -11,8 +12,7 @@ async def send_result(mcq: bool,
                       ctx: commands.Context,
                       res,
                       options: list,
-                      correct_index: int,
-                      original_embed: discord.Embed) -> None:
+                      correct_index: int) -> None:
     '''
     Sends the result of a quiz given the user's response
     '''
@@ -59,8 +59,7 @@ async def send_result_mp(mcq: bool,
                       ctx: commands.Context,
                       res,
                       options: list,
-                      correct_index: int,
-                      original_embed: discord.Embed) -> None:
+                      correct_index: int) -> None:
     '''
     Sends the result of a quiz given the user's response
     '''
@@ -69,9 +68,9 @@ async def send_result_mp(mcq: bool,
 
         ind = ord(res.component.label.lower()) - 97
 
-        ctx.current_mcq += 1  # Add 1 to total MCQ
+        ctx.current_mcq[res.author.id] += 1  # Add 1 to total MCQ
         if ind == correct_index:
-            ctx.current_score += 1  # Add 1 to current score
+            ctx.current_score[res.author.id] += 1  # Add 1 to current score
             e = discord.Embed(
                 colour=discord.Color.green(), title="Correct",
                 description=textToEmoji(REACTIONS[correct_index]) + " " + options[correct_index])
@@ -80,7 +79,7 @@ async def send_result_mp(mcq: bool,
                 colour=discord.Color.red(), title="Incorrect",
                 description=textToEmoji(REACTIONS[correct_index]) + " " + options[correct_index])
 
-        e.set_footer(text=f"<@{res.author.id}> Answered: {res.component.label}\nCurrent Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%")
+        e.set_footer(text=f"You Answered: {res.component.label}\nCurrent Score: {ctx.current_score[res.author.id]}/{ctx.current_mcq[res.author.id]} = {round(ctx.current_score[res.author.id]/ctx.current_mcq[res.author.id]*100)}%")
 
     else:
         # Show flashcard answer
@@ -99,7 +98,7 @@ async def send_result_mp(mcq: bool,
             e.title = "(No Answer Found)"
 
     # NEW: Makes answers only visible to the author
-    await res.respond(type=InteractionType.UpdateMessage, embeds=[original_embed, e])
+    await res.respond(type=InteractionType.ChannelMessageWithSource, is_ephemeral=True, embeds=[e])
 
 
 async def listen_quiz(ctx: commands.Context, questions: list):
@@ -203,7 +202,7 @@ async def listen_quiz(ctx: commands.Context, questions: list):
                 return
 
             await send_result(
-                mcq, ctx, res, options, correct_index, e)
+                mcq, ctx, res, options, correct_index)
 
         except asyncio.TimeoutError:
             await msg.edit(
@@ -222,8 +221,8 @@ async def listen_quiz(ctx: commands.Context, questions: list):
 
 
 async def listen_quiz_mp(ctx: commands.Context, questions: list):
-    ctx.current_score = 0
-    ctx.current_mcq = 0
+    ctx.current_score = defaultdict(int)
+    ctx.current_mcq = defaultdict(int)
 
     while questions:
         # Verify list is not empty
@@ -303,33 +302,45 @@ async def listen_quiz_mp(ctx: commands.Context, questions: list):
 
         def check(res):
             return res.message.id == msg.id
-        try:
-            res = await ctx.bot.wait_for("button_click", timeout=120, check=check)
 
-            if res.component.label == "🛑":
-                finalscore = f"Final Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%" if ctx.current_mcq else None
-                await res.respond(type=InteractionType.UpdateMessage, components=[])
+        async def listen_button():
+            while 1:
+                # Perpetual control loop
+                res = await ctx.bot.wait_for("button_click", check=check)
 
-                end_embed = discord.Embed(title="Quiz Terminated. Enter a new link to start again!",
-                              description = ("\n"+finalscore) if finalscore else "", colour=discord.Colour.red())
-                end_embed.set_author(icon_url=ctx.author.avatar_url, name=f"Quiz for {ctx.author.display_name}")
-                await ctx.channel.send(embed=end_embed)
-                return
+                if res.component.label == "🛑":
+                    await res.respond(type=InteractionType.UpdateMessage, components=[])
 
-            await send_result_mp(
-                mcq, ctx, res, options, correct_index, e)
+                    standings = discord.Embed(title="Final Standings")
+                    standings.set_author(name="Quiz Terminated. Enter a new link to start again!")
+                    standings.description = "\n".join([f"<@{id}>: {ctx.current_score[id]}/{ctx.current_mcq[id]} = {round(ctx.current_score[id]/ctx.current_mcq[id]*100)}%" for id in ctx.current_mcq])
 
-        except asyncio.TimeoutError:
-            await msg.edit(
-                content="**Quiz timed out after 120 seconds of inactivity.**")
+                    await ctx.channel.send(embed=standings)
+                    return
+
+                await send_result_mp(
+                    mcq, ctx, res, options, correct_index)
+
+        t = asyncio.create_task(listen_button())
+        await asyncio.sleep(10)  # Delay
+
+        if t.done():
+            # if the stop button was pressed
             return
 
-    finalscore = f"Final Score: {ctx.current_score}/{ctx.current_mcq} = {round(ctx.current_score/ctx.current_mcq*100)}%" \
-                 if ctx.current_mcq else None
+        t.cancel() # cancel task of waiting for buttons
 
-    end_embed = discord.Embed(title="Question deck has been exhausted. Enter a new link to start again!",
-                              description = ("\n"+finalscore) if finalscore else "", colour=discord.Colour.dark_grey())
+        # Terminate this question
 
-    end_embed.set_author(icon_url=ctx.author.avatar_url, name=f"Quiz for {ctx.author.display_name}")
-    await ctx.channel.send(embed=end_embed)
+        standings = discord.Embed(title="Standings")
+        standings.description = "\n".join([f"<@{id}>: {ctx.current_score[id]}/{ctx.current_mcq[id]} = {round(ctx.current_score[id]/ctx.current_mcq[id]*100)}%" for id in ctx.current_mcq])
+        await msg.edit(components=[])
+        await ctx.send(embed=standings)
+
+
+    standings = discord.Embed(title="Final Standings")
+    standings.set_author(name="Question deck has been exhausted. Enter a new link to start again!")
+    standings.description = "\n".join([f"<@{id}>: {ctx.current_score[id]}/{ctx.current_mcq[id]} = {round(ctx.current_score[id]/ctx.current_mcq[id]*100)}%" for id in ctx.current_mcq])
+
+    await ctx.channel.send(embed=standings)
     return

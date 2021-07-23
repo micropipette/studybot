@@ -6,7 +6,7 @@ import random
 from urllib.parse import urlparse
 from utils.utilities import locale
 from db import collection, Airtable
-from .quiz_backend import listen_quiz
+from .quiz_backend import listen_quiz, listen_quiz_mp
 from discord_components import Button, ButtonStyle
 from utils.button_menu import send_menu_linker
 
@@ -135,7 +135,7 @@ class Quizzes(commands.Cog):
 
         random.shuffle(questions)
 
-        await listen_quiz(ctx, questions)
+        await listen_quiz_mp(ctx, questions)
 
     @commands.command()
     async def template(self, ctx: commands.Context):
