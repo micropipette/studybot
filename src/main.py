@@ -25,8 +25,7 @@ for c in components.cogs:
 online = False
 
 # Top.gg API
-bot.topggpy = topgg.DBLClient(
-    bot, os.environ.get("TOPGG"), autopost=True, post_shard_count=True)
+bot.topggpy = topgg.DBLClient(bot, os.environ.get("TOPGG"))
 
 
 @bot.event

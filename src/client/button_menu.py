@@ -39,8 +39,7 @@ async def send_menu(ctx: commands.context, embeds: discord.Embed):
                               embed=embeds[current_page])
 
         except asyncio.TimeoutError:
-            await msg.edit(
-                components=[])
+            await msg.edit(components=[])
             return
 
 
@@ -61,13 +60,6 @@ async def send_menu_linker(ctx: commands.context, embeds: discord.Embed):
     else:
         msg = await ctx.send(embed=embeds[0])
         return
-
-    # async def explore_click_listener(res):
-    #     if res.author.id == ctx.author.id and res.message.id == msg.id:
-    #         pass
-
-    # ctx.bot.add_listener(explore_click_listener, "on_button_click")
-    # This is a cool idea
 
     while 1:
 
@@ -92,8 +84,7 @@ async def send_menu_linker(ctx: commands.context, embeds: discord.Embed):
 
             if quiz:
                 quiz_cog = ctx.bot.get_cog("Quizzes")
-                asyncio.create_task(quiz_cog.quiz(ctx, sheet=res.component.label))
-                # NOTE: Allows the explore menu to spawn quizzes concurrently!
+                await quiz_cog.quiz(ctx, sheet=res.component.label)
 
         except asyncio.TimeoutError:
             await msg.edit(
