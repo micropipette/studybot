@@ -47,16 +47,6 @@ async def on_ready():
 if cfg["Hosting"]["ping"] == "True":
     keep_alive()
 
-
-@bot.event
-async def on_autopost_success():
-    logger.info(f'Posted server count ({bot.topggpy.guild_count}), shard count ({bot.shard_count})')
-
-
-@bot.event
-async def on_autopost_error(e):
-    logger.info('Error posting server count.')
-
 try:
     bot.run(os.environ.get("TOKEN"))  # Run bot with loaded password
 except HTTPException:

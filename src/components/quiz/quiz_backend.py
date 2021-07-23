@@ -2,6 +2,7 @@ from discord_components import Button, ButtonStyle, InteractionType
 import asyncio
 import discord
 from discord.ext import commands
+from discord_components.interaction import Interaction
 from utils.utilities import textToEmoji
 from collections import defaultdict
 
@@ -187,6 +188,11 @@ async def listen_quiz(ctx: commands.Context, questions: list):
 
         def check(res):
             return res.author.id == ctx.author.id and res.message.id == msg.id
+
+        # async def listen_stranger(res: Interaction):
+        #     if res.message.id == msg.id and res.author.id != ctx.author.id:
+        #         await res.respond(InteractionType.ChannelMessageWithSource, ephemeral=True, content="This isn't your quiz!")
+        # TODO: future idea
 
         try:
             res = await ctx.bot.wait_for("button_click", timeout=120, check=check)
