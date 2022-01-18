@@ -3,6 +3,7 @@ import asyncio
 import discord
 from discord.ext import commands
 from discord_components.interaction import Interaction
+from discord_slash.context import SlashContext
 from utils.utilities import textToEmoji
 from collections import defaultdict
 
@@ -102,9 +103,10 @@ async def send_result_mp(mcq: bool,
     await res.respond(type=InteractionType.ChannelMessageWithSource, is_ephemeral=True, embeds=[e])
 
 
-async def listen_quiz(ctx: commands.Context, questions: list):
+async def listen_quiz(ctx: SlashContext, questions: list):
     ctx.current_score = 0
     ctx.current_mcq = 0
+    # Store current state of quiz
 
     while questions:
         # Verify list is not empty
@@ -226,7 +228,7 @@ async def listen_quiz(ctx: commands.Context, questions: list):
     return
 
 
-async def listen_quiz_mp(ctx: commands.Context, questions: list):
+async def listen_quiz_mp(ctx: SlashContext, questions: list):
     ctx.current_score = defaultdict(int)
     ctx.current_mcq = defaultdict(int)
 

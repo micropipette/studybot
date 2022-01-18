@@ -5,7 +5,10 @@
 #    pip-compile requirements.in
 #
 aiohttp==3.7.4.post0
-    # via discord.py
+    # via
+    #   discord-components
+    #   discord-py-slash-command
+    #   discord.py
 async-timeout==3.0.1
     # via aiohttp
 attrs==21.2.0
@@ -26,12 +29,15 @@ click==8.0.1
     # via flask
 colorama==0.4.4
     # via click
-discord-components==1.0.0
+discord-components==2.1.2
+    # via -r requirements.in
+discord-py-slash-command==3.0.3
     # via -r requirements.in
 discord.py==1.7.3
     # via
     #   -r requirements.in
     #   discord-components
+    #   discord-py-slash-command
     #   topggpy
 dnspython==2.1.0
     # via -r requirements.in

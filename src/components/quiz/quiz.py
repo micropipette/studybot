@@ -7,8 +7,13 @@ from urllib.parse import urlparse
 from utils.utilities import locale
 from db import collection, Airtable
 from .quiz_backend import listen_quiz, listen_quiz_mp
-from discord_components import Button, ButtonStyle
+from discord_components import Button, ButtonStyle, ActionRow
 from utils.button_menu import send_menu_linker
+
+# Slash command stuff
+from discord_slash import SlashContext
+from discord_slash import cog_ext
+from discord_slash.utils import manage_commands
 
 
 def sheet_name(sheet: str) -> str:
@@ -49,15 +54,22 @@ class Quizzes(commands.Cog):
     #     except Exception:
     #         await ctx.send("Could not scrape the URL provided.")
 
-    @commands.command()
-    async def quiz(self, ctx: commands.Context, *, sheet: str = None):
+    @cog_ext.cog_slash(name="quiz",
+                       description="Begins a singleplayer quiz from a Studybot sheet.",
+                       options=[manage_commands.create_option(
+                            name="sheet",
+                            description="Sheet URL or name of bound sheet",
+                            option_type=3,
+                            required=True
+                       )])
+    async def quiz(self, ctx: SlashContext, sheet: str):
         '''
         Begins a singleplayer quiz from a Studybot sheet.
         Provide a sheet URL or the name of a Bound spreadsheet.
         Create your own sheet using the `template` command.
         '''
         if not sheet:
-            await ctx.send(f"Please provide a Sheets URL or a valid bound sheet name.\nFor example, `{(await self.bot.get_prefix(ctx.message))[-1]}quiz https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0`\n\nCreate a quiz spreadsheet by running `{(await self.bot.get_prefix(ctx.message))[-1]}template` and following the instructions")
+            await ctx.send(f"Please provide a Sheets URL or a valid bound sheet name.\nFor example, `/quiz https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0`\n\nCreate a quiz spreadsheet by running `/template` and following the instructions")
             return
 
         if document := collection("bindings").find_one({"name_lower": sheet_name(sheet), "locale": locale(ctx)}):
@@ -74,10 +86,10 @@ class Quizzes(commands.Cog):
             sheet: gspread.Spreadsheet = self.gc.open_by_url(url)
             title = sheet.title
         except gspread.NoValidUrlKeyFound:
-            await ctx.send("Sheet not found. Please check that your sheet exists and is shared with **anyone with link**.")
+            await ctx.send("Sheet not found. Please check that your sheet exists and is shared with **anyone with link**.", hidden=True)
             return
         except gspread.exceptions.APIError:
-            await ctx.send("The sheet you linked is not shared publicly. Please check that your sheet is shared with **anyone with link**.")
+            await ctx.send("The sheet you linked is not shared publicly. Please check that your sheet is shared with **anyone with link**.", hidden=True)
             return
 
         start_embed = discord.Embed(title=f"Starting quiz for `{title}`...", colour=discord.Colour.green())
@@ -94,15 +106,22 @@ class Quizzes(commands.Cog):
 
         await listen_quiz(ctx, questions)
 
-    @commands.command()
-    async def quizmp(self, ctx: commands.Context, *, sheet: str = None):
+    @cog_ext.cog_slash(name="quizmp",
+                       description="Begins a multiplayer quiz from a Studybot sheet.",
+                       options=[manage_commands.create_option(
+                            name="sheet",
+                            description="Sheet URL or name of bound sheet",
+                            option_type=3,
+                            required=True
+                       )])
+    async def quizmp(self, ctx: commands.Context, sheet: str):
         '''
         Begins a multiplayer quiz from a Studybot sheet.
         Provide a sheet URL or the name of a Bound spreadsheet.
         Create your own sheet using the `template` command.
         '''
         if not sheet:
-            await ctx.send(f"Please provide a Sheets URL or a valid bound sheet name.\nFor example, `{(await self.bot.get_prefix(ctx.message))[-1]}quiz https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0`\n\nCreate a quiz spreadsheet by running `{(await self.bot.get_prefix(ctx.message))[-1]}template` and following the instructions")
+            await ctx.send(f"Please provide a Sheets URL or a valid bound sheet name.\nFor example, `/quiz https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0`\n\nCreate a quiz spreadsheet by running `/template` and following the instructions")
             return
 
         if document := collection("bindings").find_one({"name_lower": sheet_name(sheet), "locale": locale(ctx)}):
@@ -137,28 +156,36 @@ class Quizzes(commands.Cog):
 
         await listen_quiz_mp(ctx, questions)
 
-    @commands.command()
-    async def template(self, ctx: commands.Context):
-        '''
-        Gets the link for the template spreadsheet.
-        '''
+    @cog_ext.cog_slash(name="template",
+                        description="Gets the link for the template spreadsheet.")
+    async def template(self, ctx: SlashContext):
         e = discord.Embed(title="Using the template")
         e.set_image(url="https://cdn.discordapp.com/attachments/804388848510435370/827998690886418463/ezgif-7-c601e2fb575f.gif")
 
-        components = [[Button(label="Template spreadsheet", style=ButtonStyle.URL,
+        components = [ActionRow(Button(label="Template spreadsheet", style=ButtonStyle.URL,
                       url="https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0/copy"),
                       Button(label="Tutorial Video", style=ButtonStyle.URL,
-                      url="https://youtu.be/cdv8aSUOyMg")]]
-        await ctx.send(embed=e, content="**Make a copy of this spreadsheet, and add your own questions!\nDon't forget to set the sheet to `anyone with link can view`**", components=components)
+                      url="https://youtu.be/cdv8aSUOyMg")).to_dict()]
+        await ctx.send(embed=e,
+        content="**Make a copy of this spreadsheet, and add your own questions!\nDon't forget to set the sheet to `anyone with link can view`**",
+        components=components, hidden=True)
 
 
-    @commands.command()
-    async def bind(self, ctx: commands.Context, url: str = None, *, name: str = None):
-        '''
-        Binds a given spreadsheet to this context under a custom name.
-        '''
+    @cog_ext.cog_slash(name="bind",
+                       description="Binds a given spreadsheet to this context under a custom name.",
+                       options=[manage_commands.create_option(
+                            name="url",
+                            description="Sheet URL",
+                            option_type=3,
+                            required=True),
+                            manage_commands.create_option(
+                            name="name",
+                            description="Name of Bound Sheet",
+                            option_type=3,
+                            required=True)])
+    async def bind(self, ctx: SlashContext, url: str, name: str):
         if not url or not name:
-            await ctx.send(f"Please provide a Sheets URL or a valid bound sheet name.\nFor example, `{(await self.bot.get_prefix(ctx.message))[-1]}bind https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0 Fun Trivia`\n\nCreate a quiz spreadsheet by running `{(await self.bot.get_prefix(ctx.message))[-1]}template` and following the instructions")
+            await ctx.send(f"Please provide a Sheets URL or a valid bound sheet name.\nFor example, `/bind https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0 Fun Trivia`\n\nCreate a quiz spreadsheet by running `/template` and following the instructions")
             return
 
         try:
@@ -205,7 +232,7 @@ class Quizzes(commands.Cog):
         Unbinds the spreadsheet with the specified name, if you own it.
         '''
         if not name:
-            await ctx.send(f"Please provide the name a of a bound sheet you own. e.g. `{(await self.bot.get_prefix(ctx.message))[-1]}unbind Fun Trivia`")
+            await ctx.send(f"Please provide the name a of a bound sheet you own. e.g. `/unbind Fun Trivia`")
             return
 
         if document := collection("bindings").find_one(
@@ -227,24 +254,22 @@ class Quizzes(commands.Cog):
             await ctx.send(
                 f"A sheet with name `{name}` was not found in this locale.")
 
-    @commands.command()
-    async def sheets(self, ctx: commands.Context):
-        '''
-        Lists all bound sheets in this context.
-        '''
+    @cog_ext.cog_slash(name="sheets",
+                        description="Lists all bound sheets in this context.")
+    async def sheets(self, ctx: SlashContext):
         embeds = []
 
         async def add_embed():
 
             if ctx.guild:
-                e = discord.Embed(description=f"Here are the bound sheets in {ctx.guild.name}.\nYou can start a quiz from the list by clicking on the corresponding button underneath this message.\nTo bind a sheet, use the `{(await self.bot.get_prefix(ctx.message))[-1]}bind` command.",
+                e = discord.Embed(description=f"Here are the bound sheets in {ctx.guild.name}.\nYou can start a quiz from the list by clicking on the corresponding button underneath this message.\nTo bind a sheet, use the `/bind` command.",
                                 colour=discord.Color.blue())
             else:
-                e = discord.Embed(description=f"Here are the sheets in this DM.\nYou can start a quiz from the list by clicking on the corresponding button underneath this message.\nTo bind a sheet, use the `{(await self.bot.get_prefix(ctx.message))[-1]}bind` command.",
+                e = discord.Embed(description=f"Here are the sheets in this DM.\nYou can start a quiz from the list by clicking on the corresponding button underneath this message.\nTo bind a sheet, use the `/bind` command.",
                                 colour=discord.Color.blue())
 
             embeds.append(e)
-            embeds[-1].set_footer(text=f"To start a quiz using one of these sheets, use [{(await self.bot.get_prefix(ctx.message))[-1]}quiz <sheet name>], or click one of the buttons below!", icon_url=self.bot.user.avatar_url)
+            embeds[-1].set_footer(text=f"To start a quiz using one of these sheets, use [/quiz <sheet name>], or click one of the buttons below!", icon_url=self.bot.user.avatar_url)
 
         await add_embed()
         for record in collection("bindings").find({"locale": locale(ctx)}):
@@ -264,19 +289,17 @@ class Quizzes(commands.Cog):
 
         await send_menu_linker(ctx, embeds)
 
-    @commands.command()
+    @cog_ext.cog_slash(name="explore",
+                        description="Lists premade sheets for you to use in your quizzes!")
     async def explore(self, ctx: commands.Context):
-        '''
-        Lists premade sheets for you to use in your quizzes!
-        '''
         embeds = []
 
-        async def add_embed():
-            embeds.append(discord.Embed(description=f"Here are the Studybot official curated sheets, ready for you to use in the `{(await self.bot.get_prefix(ctx.message))[-1]}quiz` command! You can start a quiz from the list by clicking on the corresponding button underneath this message.\n[See the full list of sheets here](https://www.studybot.ca/explore.html)",
+        def add_embed():
+            embeds.append(discord.Embed(description=f"Here are the Studybot official curated sheets, ready for you to use in the `/quiz` command! You can start a quiz from the list by clicking on the corresponding button underneath this message.\n[See the full list of sheets here](https://www.studybot.ca/explore.html)",
                             colour=discord.Color.blue()))
-            embeds[-1].set_footer(text=f"To start a quiz using one of these sheets, use [{(await self.bot.get_prefix(ctx.message))[-1]}quiz <sheet name>], or click one of the buttons below!", icon_url=self.bot.user.avatar_url)
+            embeds[-1].set_footer(text=f"To start a quiz using one of these sheets, use [/quiz <sheet name>], or click one of the buttons below!", icon_url=self.bot.user.avatar_url)
 
-        await add_embed()
+        add_embed()
         for record in await self.airtable.sheets:
             record = record["fields"]
 
@@ -285,7 +308,7 @@ class Quizzes(commands.Cog):
                                      value=f"{record['Description']}\nBy: {record['Creator Discord Tag']}",
                                      inline=False)
             else:
-                await add_embed()
+                add_embed()
                 embeds[-1].add_field(name=record["Sheet Name"],
                                      value=f"{record['Description']}\nBy: {record['Creator Discord Tag']}",
                                      inline=False)

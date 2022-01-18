@@ -5,7 +5,6 @@ import time
 import components
 from client import client as bot
 from config import cfg
-from hosting.keep_alive import keep_alive
 from utils.utilities import set_start_time, get_uptime
 from db import mongo_startup
 from utils.logger import logger
@@ -43,9 +42,6 @@ async def on_ready():
     Message cache etc. is ready
     '''
     logger.info(f"Startup completed in {round(get_uptime(),3)}s")
-
-if cfg["Hosting"]["ping"] == "True":
-    keep_alive()
 
 try:
     bot.run(os.environ.get("TOKEN"))  # Run bot with loaded password

@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord_slash import SlashCommand
 from discord_components import DiscordComponents
 from config import cfg
 from utils.logger import logger
@@ -19,6 +20,11 @@ client = commands.AutoShardedBot(
     activity=discord.Game(cfg["Settings"]["Status"]))
 
 ddb = DiscordComponents(client)
+
+slash = SlashCommand(client,
+                     override_type=True,
+                     sync_commands=True,
+                     delete_from_unused_guilds=True)
 
 help = client.get_command("help")
 help.hidden = True
