@@ -4,7 +4,7 @@
 
 StudyBot is a Discord bot which helps you get smarter!
 It allows you to study from various question banks from all sorts of disciplines, and allows you to add your own too.
-StudyBot is written mainly in Python using `discord.py`.
+StudyBot is written in Python using `dis-snek`.
 It uses MongoDB for persistence, and interfaces with Google Sheets API to read user-generated question banks.
 
 
@@ -40,3 +40,5 @@ If you are contributing, and would like to add a new library to the code, please
 2021 June: Button implementation, major UI overhaul, and Airtable/explore page integration
 
 2021 July: Sharding + more to come
+
+2022 January: Full bot rewrite to support slash commands
