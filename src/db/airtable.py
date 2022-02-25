@@ -2,7 +2,7 @@
 import aiohttp
 import os
 import datetime
-from utils.logger import logger
+from logger import log
 from config import cfg
 
 
@@ -34,7 +34,7 @@ class Airtable():
                 datetime.datetime.utcnow() - self.lastfetch > \
                 datetime.timedelta(seconds=300):
             await self.refresh_records()
-            logger.info("Airtable records refreshed due to staleness (300).")
+            log.info("Airtable records refreshed due to staleness (300).")
         return self.explore["records"]
 
     async def find_sheet(self, name: str) -> dict:
