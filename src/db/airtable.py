@@ -1,7 +1,9 @@
 # This file defines an interface for talking with the airtable API
-import aiohttp
-import os
 import datetime
+import os
+
+import aiohttp
+
 from config import cfg
 
 

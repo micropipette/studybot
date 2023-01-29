@@ -1,15 +1,14 @@
-import gspread
 import os
 import random
-from utils import locale
-from db import collection, Airtable
-from effectors.quiz_backend import listen_quiz, listen_quiz_mp
 
-from naff import (slash_command,
-                  OptionTypes, slash_option,
-                  SlashCommandChoice, InteractionContext, Extension,
-                  Embed, MaterialColors)
+import gspread
+from naff import (Embed, Extension, InteractionContext, MaterialColors,
+                  OptionTypes, SlashCommandChoice, slash_command, slash_option)
+
+from db import Airtable, collection
 from effectors.button_menu import LinkerMenu
+from effectors.quiz_backend import listen_quiz, listen_quiz_mp
+from utils import locale
 
 
 def sheet_name(sheet: str) -> str:
@@ -21,7 +20,6 @@ def sheet_name(sheet: str) -> str:
 
 
 class Quizzes(Extension):
-    name = "quiz"
 
     @slash_command(name="quiz",
                    description="Begins a quiz from a Studybot sheet.")

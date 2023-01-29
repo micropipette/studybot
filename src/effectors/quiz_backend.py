@@ -1,11 +1,12 @@
-from naff import (InteractionContext, Embed, Button,
-                  ButtonStyles, spread_to_rows,
-                  MaterialColors, ComponentContext)
-from naff.api.events.internal import Component
 import asyncio
-from utils import textToEmoji
 from collections import defaultdict
 from dataclasses import dataclass
+
+from naff import (Button, ButtonStyles, ComponentContext, Embed,
+                  InteractionContext, MaterialColors, spread_to_rows)
+from naff.api.events.internal import Component
+
+from utils import textToEmoji
 
 REACTIONS = "abcdefghijklmnopqrstuvwxyz"
 

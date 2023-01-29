@@ -1,10 +1,10 @@
-from naff import (Embed, InteractionContext, MaterialColors,
-                  ButtonStyles, Button, slash_command, Extension)
+from naff import (Button, ButtonStyles, Embed, Extension, InteractionContext,
+                  MaterialColors, SlashCommand, slash_command)
+
 from config import version
 
 
 class General(Extension):
-    name = "general"
 
     @slash_command(name="invite",
                    description="Provides the invite link to invite Studybot to your server!")
@@ -53,12 +53,13 @@ class General(Extension):
                       Button(label="Tutorial Video", style=ButtonStyles.URL,
                              url="https://youtu.be/cdv8aSUOyMg")]]
 
-        quiz_scale = ctx.bot.get_extensions("quiz")[0]
-        general_scale = ctx.bot.get_extensions("general")[0]
+        quiz_scale = ctx.bot.get_ext("Quizzes")
+        general_scale = ctx.bot.get_ext("General")
 
+        command: SlashCommand
         for command in (quiz_scale.commands + general_scale.commands):
             embed.add_field(
-                name="/" + command.name,
+                name=f"/{command.name}",
                 value=command.description, inline=False)
         await ctx.send(embed=embed, components=components, ephemeral=True)
 
