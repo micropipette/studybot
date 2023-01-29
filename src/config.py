@@ -1,7 +1,7 @@
 import configparser
 
 '''
-Loads the configuration file for Comrade.
+Loads the configuration file for Studybot.
 If you are looking for the configuration file,
 '''
 
