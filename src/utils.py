@@ -1,4 +1,6 @@
-def locale(ctx):
+from naff import InteractionContext
+
+def locale(ctx: InteractionContext):
     '''
     Gets guild ID or author id -- for use in DB accessing
     '''
