@@ -42,3 +42,5 @@ If you are contributing, and would like to add a new library to the code, please
 2021 July: Sharding + more to come
 
 2022 January: Full bot rewrite to support slash commands
+
+Latest Update: Multiplayer Support
