@@ -401,5 +401,5 @@ async def listen_quiz_mp(ctx: InteractionContext, quiz_name: str, questions: lis
 
     stop_embed = termination_embed_mp(sesh,
                                       "Question deck has been exhausted. Enter a new link to start again!")
-    await ctx.chnanel.send(embed=stop_embed)
+    await ctx.channel.send(embed=stop_embed)
     return
