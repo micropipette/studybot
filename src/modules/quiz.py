@@ -2,8 +2,9 @@ import os
 import random
 
 import gspread
-from naff import (Embed, Extension, InteractionContext, MaterialColors,
-                  OptionTypes, SlashCommandChoice, slash_command, slash_option)
+from interactions import (Embed, Extension, InteractionContext, MaterialColors,
+                          OptionType, SlashCommandChoice, slash_command,
+                          slash_option)
 
 from db import Airtable, collection
 from effectors.button_menu import LinkerMenu
@@ -24,7 +25,7 @@ class Quizzes(Extension):
     @slash_command(name="quiz",
                    description="Begins a quiz from a Studybot sheet.")
     @slash_option(name="gamemode", description="Singleplayer or multiplayer",
-                  opt_type=OptionTypes.STRING, required=True,
+                  opt_type=OptionType.STRING, required=True,
                   choices=[
                       SlashCommandChoice(name="Singleplayer",
                                          value="singleplayer"),
@@ -32,7 +33,7 @@ class Quizzes(Extension):
                                          value="multiplayer")
                   ])
     @slash_option(name="sheet", description="Sheet URL or name of bound sheet",
-                  opt_type=OptionTypes.STRING, required=True)
+                  opt_type=OptionType.STRING, required=True)
     async def quiz(self, ctx: InteractionContext, gamemode: str, sheet: str):
         '''
         Begins a singleplayer quiz from a Studybot sheet.
@@ -84,9 +85,9 @@ class Quizzes(Extension):
     @slash_command(name="bind",
                    description="Binds a given spreadsheet to this context under a custom name.")
     @slash_option(name="url", description="Sheet URL",
-                  opt_type=OptionTypes.STRING, required=True)
+                  opt_type=OptionType.STRING, required=True)
     @slash_option(name="name", description="Custom name for the sheet",
-                  opt_type=OptionTypes.STRING, required=True)
+                  opt_type=OptionType.STRING, required=True)
     async def bind(self, ctx: InteractionContext, url: str, name: str):
 
         # NOTE: removed admin check because it cannot be implemented in slash commands
@@ -137,7 +138,7 @@ class Quizzes(Extension):
     @slash_command(name="unbind",
                    description="Unbinds the sheet with the specified name, if you own it.")
     @slash_option(name="name", description="Custom name of the sheet",
-                  opt_type=OptionTypes.STRING, required=True)
+                  opt_type=OptionType.STRING, required=True)
     async def unbind(self, ctx: InteractionContext, name: str = None):
 
         if document := collection("bindings").find_one(

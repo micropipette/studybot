@@ -1,5 +1,6 @@
-from naff import (Button, ButtonStyles, Embed, Extension, InteractionContext,
-                  MaterialColors, SlashCommand, slash_command)
+from interactions import (Button, ButtonStyle, Embed, Extension,
+                          InteractionContext, MaterialColors, SlashCommand,
+                          slash_command)
 
 from config import version
 
@@ -9,7 +10,7 @@ class General(Extension):
     @slash_command(name="invite",
                    description="Provides the invite link to invite Studybot to your server!")
     async def invite(self, ctx: InteractionContext):
-        components = [Button(label="Invite Studybot to your server!", style=ButtonStyles.URL,
+        components = [Button(label="Invite Studybot to your server!", style=ButtonStyle.URL,
                       url="https://discord.com/api/oauth2/authorize?client_id=804401459931643945&permissions=2147503104&scope=bot%20applications.commands")]
         await ctx.send(content="Click the link below to invite Studybot!", components=components)
 
@@ -21,10 +22,10 @@ class General(Extension):
 
         components = [
             Button(label="Template spreadsheet",
-                   style=ButtonStyles.URL,
+                   style=ButtonStyle.URL,
                    url="https://docs.google.com/spreadsheets/d/1Gbr6OeEWhZMCPOsvLo9Sx7XXcxgONfPR38FKzWdLjo0/copy"),
             Button(label="Tutorial Video",
-                   style=ButtonStyles.URL,
+                   style=ButtonStyle.URL,
                    url="https://youtu.be/cdv8aSUOyMg")]
         await ctx.send(
             embed=e,
@@ -44,13 +45,13 @@ class General(Extension):
         embed.set_thumbnail(
             url="https://cdn.discordapp.com/attachments/724671574459940974/856397833807462450/a_db09eb992c31a35306bb9157d78643bf.gif")
 
-        components = [[Button(label="Invite Studybot to Your Server", style=ButtonStyles.URL,
+        components = [[Button(label="Invite Studybot to Your Server", style=ButtonStyle.URL,
                       url="https://discord.com/api/oauth2/authorize?client_id=804401459931643945&permissions=2147503104&scope=bot%20applications.commands"),
-                      Button(label="Vote for Us", style=ButtonStyles.URL,
+                      Button(label="Vote for Us", style=ButtonStyle.URL,
                       url="https://top.gg/bot/804401459931643945/vote")],
-                      [Button(label="Support Server", style=ButtonStyles.URL,
+                      [Button(label="Support Server", style=ButtonStyle.URL,
                               url="https://discord.gg/6qBxmpnnDW"),
-                      Button(label="Tutorial Video", style=ButtonStyles.URL,
+                      Button(label="Tutorial Video", style=ButtonStyle.URL,
                              url="https://youtu.be/cdv8aSUOyMg")]]
 
         quiz_scale = ctx.bot.get_ext("Quizzes")
