@@ -2,9 +2,9 @@
 
 import asyncio
 
-from naff import (ActionRow, Button, ButtonStyles, ComponentCommand,
-                  ComponentContext, Extension)
-from naff.ext.paginators import Paginator
+from interactions import (ActionRow, Button, ButtonStyle, ComponentCommand,
+                          ComponentContext, Extension)
+from interactions.ext.paginators import Paginator
 
 
 class LinkerMenu(Paginator):
@@ -28,7 +28,7 @@ class LinkerMenu(Paginator):
             *[Button(
                 label=field.name,
                 custom_id=f"{self._uuid}|{field.name}",
-                style=ButtonStyles.GRAY) for field in self.pages[self.page_index].fields]
+                style=ButtonStyle.GRAY) for field in self.pages[self.page_index].fields]
         )
 
         return rows + [additional_row]
